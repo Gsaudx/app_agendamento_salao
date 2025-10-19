@@ -1,3 +1,4 @@
+import 'package:app_paula_barros/components/floating_button.dart';
 import 'package:flutter/material.dart';
 import 'package:app_paula_barros/screens/newclient_screen.dart';
 
@@ -48,10 +49,11 @@ class ClientsScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(context, NewClientScreen.routeName),
-        icon: const Icon(Icons.person_add_alt),
-        label: const Text('Novo cliente'),
+      floatingActionButton: FloatingButton(
+        label: 'Novo Cliente',
+        onPressed: () {
+          Navigator.pushNamed(context, NewClientScreen.routeName);
+        },
       ),
     );
   }
