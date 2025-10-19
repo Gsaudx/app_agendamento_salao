@@ -1,4 +1,5 @@
 import 'package:app_paula_barros/components/floating_button.dart';
+import 'package:app_paula_barros/screens/editclient_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:app_paula_barros/screens/newclient_screen.dart';
 
@@ -10,16 +11,30 @@ class ClientsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clients = [
-      (name: 'Ana Ferreira', phone: '(11) 99999-1234', notes: 'Prefere produtos veganos'),
-      (name: 'Bruna Souza', phone: '(11) 98888-4567', notes: 'Coloração a cada 45 dias'),
-      (name: 'Maria Silva', phone: '(11) 97777-8901', notes: 'Sempre agenda manicure nas sextas'),
-      (name: 'Carla Mendes', phone: '(11) 96666-2345', notes: 'Cabelo cacheado, gosta de finalização com difusor'),
+      (
+        name: 'Ana Ferreira',
+        phone: '(11) 99999-1234',
+        notes: 'Prefere produtos veganos',
+      ),
+      (
+        name: 'Bruna Souza',
+        phone: '(11) 98888-4567',
+        notes: 'Coloração a cada 45 dias',
+      ),
+      (
+        name: 'Maria Silva',
+        phone: '(11) 97777-8901',
+        notes: 'Sempre agenda manicure nas sextas',
+      ),
+      (
+        name: 'Carla Mendes',
+        phone: '(11) 96666-2345',
+        notes: 'Cabelo cacheado, gosta de finalização com difusor',
+      ),
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Clientes'),
-      ),
+      appBar: AppBar(title: const Text('Clientes')),
       body: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         itemCount: clients.length,
@@ -28,9 +43,7 @@ class ClientsScreen extends StatelessWidget {
           final client = clients[index];
           return Card(
             child: ListTile(
-              leading: CircleAvatar(
-                child: Text(client.name.substring(0, 1)),
-              ),
+              leading: CircleAvatar(child: Text(client.name.substring(0, 1))),
               title: Text(client.name),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,8 +55,12 @@ class ClientsScreen extends StatelessWidget {
                 ],
               ),
               trailing: IconButton(
-                icon: const Icon(Icons.message_outlined),
-                onPressed: () {},
+                icon: const Icon(Icons.create_outlined),
+                onPressed: () {
+                  Navigator.pushNamed(context, EditClientScreen.routeName);
+
+                  // TODO: TEM QUE PASSAR OS DADOS DO CLIENTE QUE FOI SELECIONADO
+                },
               ),
             ),
           );

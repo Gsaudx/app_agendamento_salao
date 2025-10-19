@@ -1,3 +1,4 @@
+import 'package:app_paula_barros/screens/editclient_screen.dart';
 import 'package:flutter/material.dart';
 
 import 'screens/appointments_screen.dart';
@@ -21,6 +22,7 @@ class SalonSchedulerApp extends StatelessWidget {
         ClientsScreen.routeName: (context) => const ClientsScreen(),
         ServicesScreen.routeName: (context) => const ServicesScreen(),
         NewClientScreen.routeName: (context) => const NewClientScreen(),
+        EditClientScreen.routeName: (context) => const EditClientScreen(),
       },
       debugShowCheckedModeBanner: false,
     );
