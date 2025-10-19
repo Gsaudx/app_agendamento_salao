@@ -4,6 +4,7 @@ import 'screens/appointments_screen.dart';
 import 'screens/clients_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/services_screen.dart';
+import 'screens/newclient_screen.dart';
 
 class SalonSchedulerApp extends StatelessWidget {
   const SalonSchedulerApp({super.key});
@@ -19,6 +20,7 @@ class SalonSchedulerApp extends StatelessWidget {
         AppointmentsScreen.routeName: (context) => const AppointmentsScreen(),
         ClientsScreen.routeName: (context) => const ClientsScreen(),
         ServicesScreen.routeName: (context) => const ServicesScreen(),
+        NewClientScreen.routeName: (context) => const NewClientScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

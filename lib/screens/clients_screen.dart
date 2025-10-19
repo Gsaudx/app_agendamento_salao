@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:app_paula_barros/screens/newclient_screen.dart';
 
 class ClientsScreen extends StatelessWidget {
   const ClientsScreen({super.key});
@@ -48,7 +49,7 @@ class ClientsScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
+        onPressed: () => Navigator.pushNamed(context, NewClientScreen.routeName),
         icon: const Icon(Icons.person_add_alt),
         label: const Text('Novo cliente'),
       ),
