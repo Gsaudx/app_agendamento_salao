@@ -1,8 +1,11 @@
-import 'package:app_paula_barros/components/floating_button.dart';
 import 'package:flutter/material.dart';
 
+import '../components/floating_button.dart';
+import '../dependencias/dependencias_widget.dart';
+import '../servicos/autenticacao_servico.dart';
 import 'appointments_screen.dart';
 import 'clients_screen.dart';
+import 'login_screen.dart';
 import 'services_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -13,15 +16,27 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final autenticacao = DependenciasWidget.autenticacaoDe(context);
+    final usuario = autenticacao.usuarioAtual;
+    final saudacao = usuario?.displayName?.trim().isNotEmpty == true
+        ? usuario!.displayName!
+        : (usuario?.email ?? 'Paula');
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agenda do Salão'),
+        actions: [
+          IconButton(
+            tooltip: 'Sair',
+            onPressed: () => _sair(context, autenticacao),
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         children: [
           Text(
-            'Bem-vinda, Paula!',
+            'Bem-vinda, $saudacao!',
             style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 24),
@@ -85,6 +100,19 @@ class HomeScreen extends StatelessWidget {
           ),
         )
         .toList();
+  }
+
+  Future<void> _sair(BuildContext context, AutenticacaoServico autenticacao) async {
+    final navigator = Navigator.of(context);
+    final mensageiro = ScaffoldMessenger.of(context);
+    try {
+      await autenticacao.sair();
+      navigator.pushNamedAndRemoveUntil(LoginScreen.routeName, (_) => false);
+    } catch (erro) {
+      mensageiro.showSnackBar(
+        SnackBar(content: Text('Não foi possível sair: $erro')),
+      );
+    }
   }
 }
 

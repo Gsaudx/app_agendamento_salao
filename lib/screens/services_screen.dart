@@ -1,7 +1,7 @@
-import 'package:app_paula_barros/components/Input.dart';
-import 'package:app_paula_barros/components/floating_button.dart';
-import 'package:app_paula_barros/components/select.dart';
 import 'package:flutter/material.dart';
+
+import '../components/Input.dart';
+import '../components/select.dart';
 
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});

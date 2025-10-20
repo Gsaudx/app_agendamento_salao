@@ -1,22 +1,34 @@
-import 'package:app_paula_barros/screens/editclient_screen.dart';
 import 'package:flutter/material.dart';
 
+import 'dependencias/dependencias_widget.dart';
 import 'screens/appointments_screen.dart';
 import 'screens/clients_screen.dart';
+import 'screens/editclient_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/services_screen.dart';
+import 'screens/login_screen.dart';
 import 'screens/newclient_screen.dart';
+import 'screens/services_screen.dart';
+import 'servicos/autenticacao_servico.dart';
 
 class SalonSchedulerApp extends StatelessWidget {
-  const SalonSchedulerApp({super.key});
+  const SalonSchedulerApp({super.key, AutenticacaoServico? autenticacaoServico})
+      : _autenticacaoServico = autenticacaoServico;
+
+  final AutenticacaoServico? _autenticacaoServico;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final autenticacao = _autenticacaoServico ?? AutenticacaoServico();
+    final rotaInicial = autenticacao.usuarioAtual != null ? HomeScreen.routeName : LoginScreen.routeName;
+
+    return DependenciasWidget(
+      autenticacao: autenticacao,
+      child: MaterialApp(
       title: 'Salão Paula Barros',
       theme: _buildTheme(),
-      initialRoute: HomeScreen.routeName,
+      initialRoute: rotaInicial,
       routes: {
+        LoginScreen.routeName: (context) => const LoginScreen(),
         HomeScreen.routeName: (context) => const HomeScreen(),
         AppointmentsScreen.routeName: (context) => const AppointmentsScreen(),
         ClientsScreen.routeName: (context) => const ClientsScreen(),
@@ -25,6 +37,7 @@ class SalonSchedulerApp extends StatelessWidget {
         EditClientScreen.routeName: (context) => const EditClientScreen(),
       },
       debugShowCheckedModeBanner: false,
+      ),
     );
   }
 
