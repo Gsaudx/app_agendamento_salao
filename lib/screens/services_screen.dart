@@ -1,9 +1,96 @@
+import 'package:app_paula_barros/components/Input.dart';
+import 'package:app_paula_barros/components/floating_button.dart';
+import 'package:app_paula_barros/components/select.dart';
 import 'package:flutter/material.dart';
 
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
 
   static const routeName = '/services';
+
+  void _addService(BuildContext context) {
+    final _formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final durationController = TextEditingController();
+    final priceController = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+      return Dialog(
+        shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16), bottom: Radius.circular(16)),
+        ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+        child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Padding(
+          padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.of(dialogContext).viewInsets.bottom + 16,
+          ),
+          child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Adicionar serviço', style: Theme.of(context).textTheme.titleMedium),
+              Input(label: 'Nome', controller: nameController, placeholder: 'Digite o nome do serviço'),
+              Select<String>(
+                label: 'Duração',
+                placeholder: 'Selecione a duração',
+                items: ['30 min', '45 min', '1h', '1h30', '2h'],
+                value: null,
+                onChanged: (value) {},
+              ),
+              Input(label: 'Preço', controller: priceController, placeholder: 'Digite o preço do serviço',),
+              const SizedBox(width: 12),
+              Row(
+              children: [
+                Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  },
+                  child: const Text('Cancelar'),
+                ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                  if (_formKey.currentState?.validate() ?? false) {
+                    Navigator.of(dialogContext).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Serviço adicionado: ${nameController.text}'),
+                    ),
+                    );
+                  }
+                  },
+                  child: const Text('Salvar'),
+                ),
+                ),
+              ],
+              ),
+            ],
+            ),
+          ),
+          ),
+        ),
+        ),
+      );
+      },
+    ).whenComplete(() {
+      nameController.dispose();
+      durationController.dispose();
+      priceController.dispose();
+    });
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +106,17 @@ class ServicesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Serviços'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: IconButton(
+              onPressed: () {
+                _addService(context);
+              },
+              icon: const Icon(Icons.add),
+            ),
+          ),
+        ],
       ),
       body: GridView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

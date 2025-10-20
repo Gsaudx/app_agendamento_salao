@@ -1,3 +1,4 @@
+import 'package:app_paula_barros/components/floating_button.dart';
 import 'package:flutter/material.dart';
 
 import 'appointments_screen.dart';
@@ -51,10 +52,9 @@ class HomeScreen extends StatelessWidget {
           ..._buildTodaySchedule(theme),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingButton(
+        label: 'Novo agendamento',
         onPressed: () {},
-        icon: const Icon(Icons.add),
-        label: const Text('Novo agendamento'),
       ),
     );
   }
