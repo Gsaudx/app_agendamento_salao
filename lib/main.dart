@@ -12,7 +12,7 @@ Future<void> main() async {
       messagingSenderId: '445326453635',
       projectId: 'app-agendamento-salao',
       authDomain: 'app-agendamento-salao.firebaseapp.com',
-      storageBucket: 'app-agendamento-salao.firebasestorage.app'
+      storageBucket: 'app-agendamento-salao.firebasestorage.app',
     ),
   );
   runApp(const SalonSchedulerApp());

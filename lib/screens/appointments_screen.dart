@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../dependencias/dependencias_widget.dart';
+import '../modelos/agendamento.dart';
 
 class AppointmentsScreen extends StatelessWidget {
   const AppointmentsScreen({super.key});
@@ -7,40 +11,71 @@ class AppointmentsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appointments = [
-      (date: '13 out • 09:00', client: 'Ana Ferreira', service: 'Corte feminino', price: 'R\$ 80'),
-      (date: '13 out • 11:30', client: 'Bruna Souza', service: 'Coloração', price: 'R\$ 160'),
-      (date: '13 out • 15:00', client: 'Maria Silva', service: 'Manicure e pedicure', price: 'R\$ 70'),
-      (date: '14 out • 10:00', client: 'Carla Mendes', service: 'Hidratação', price: 'R\$ 55'),
-    ];
+    final agendamentosServico = DependenciasWidget.agendamentosDe(context);
+    final formatadorData = DateFormat.MMMd('pt_BR');
+    final formatadorHora = DateFormat.Hm('pt_BR');
+    final formatadorMoeda = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Agendamentos'),
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        itemCount: appointments.length,
-        itemBuilder: (context, index) {
-          final appointment = appointments[index];
-          return Card(
-            child: ListTile(
-              title: Text(appointment.client),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  Text(appointment.service),
-                  const SizedBox(height: 4),
-                  Text(appointment.date, style: Theme.of(context).textTheme.bodySmall),
-                ],
+      appBar: AppBar(title: const Text('Agendamentos')),
+      body: StreamBuilder<List<Agendamento>>(
+        stream: agendamentosServico.observarAgenda(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text('Erro ao carregar agenda:\n${snapshot.error}'),
               ),
-              trailing: Text(
-                appointment.price,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            );
+          }
+          final agendamentos = snapshot.data ?? const <Agendamento>[];
+          if (agendamentos.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('Nenhum agendamento futuro encontrado.'),
               ),
-              onTap: () {},
-            ),
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: agendamentos.length,
+            itemBuilder: (context, index) {
+              final agendamento = agendamentos[index];
+              final dataFormatada =
+                  '${formatadorData.format(agendamento.inicio)} • ${formatadorHora.format(agendamento.inicio)}';
+              final precoFormatado = agendamento.preco != null
+                  ? formatadorMoeda.format(agendamento.preco)
+                  : '—';
+              return Card(
+                child: ListTile(
+                  title: Text(agendamento.clienteNome),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text(agendamento.servicoNome),
+                      const SizedBox(height: 4),
+                      Text(
+                        dataFormatada,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  trailing: Text(
+                    precoFormatado,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onTap: () {},
+                ),
+              );
+            },
           );
         },
       ),

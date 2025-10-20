@@ -15,6 +15,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _nomeController = TextEditingController();
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -25,6 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _nomeController.dispose();
     _emailController.dispose();
     _senhaController.dispose();
     super.dispose();
@@ -53,6 +55,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: tema.textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 24),
+                      if (_modoCadastro) ...[
+                        TextFormField(
+                          controller: _nomeController,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(
+                            labelText: 'Nome completo',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (valor) {
+                            if (!_modoCadastro) {
+                              return null;
+                            }
+                            if (valor == null || valor.trim().isEmpty) {
+                              return 'Informe seu nome';
+                            }
+                            if (valor.trim().length < 2) {
+                              return 'Nome muito curto';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -160,6 +185,9 @@ class _LoginScreenState extends State<LoginScreen> {
   void _alternarModo() {
     setState(() {
       _modoCadastro = !_modoCadastro;
+      if (!_modoCadastro) {
+        _nomeController.clear();
+      }
     });
   }
 
@@ -173,9 +201,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final autenticacao = DependenciasWidget.autenticacaoDe(context);
     final email = _emailController.text.trim();
     final senha = _senhaController.text.trim();
+    final nome = _modoCadastro ? _nomeController.text.trim() : null;
     try {
       if (_modoCadastro) {
-        await autenticacao.cadastrarEmailSenha(email: email, senha: senha);
+        final credencial = await autenticacao.cadastrarEmailSenha(
+          email: email,
+          senha: senha,
+        );
+        final usuario = credencial.user;
+        if (usuario != null && (nome?.isNotEmpty ?? false)) {
+          await usuario.updateDisplayName(nome);
+        }
       } else {
         await autenticacao.entrarEmailSenha(email: email, senha: senha);
       }
