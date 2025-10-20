@@ -1,75 +1,87 @@
 # app_paula_barros
 
-> Aplicativo Flutter simples para controle de agendamentos do Salão Paula Barros. O objetivo é ser fácil de entender, modificar e apresentar no projeto interdisciplinar.
+Aplicativo Flutter para gerenciamento do Salão Paula Barros. O projeto combina Material 3 com autenticação Firebase, integrações em tempo real com Cloud Firestore e fluxos básicos de clientes, serviços e agenda.
 
-## Tecnologias
+## Visão Geral
 
-- **Flutter** (Material 3) com **Dart 3.9**
-- Navegação com rotas nomeadas padrão (`MaterialApp.routes`)
-- Telas estáticas com dados fictícios (integração futura com Firebase)
+- Flutter 3.24+ (Dart 3.9) com Material 3 e rotas nomeadas.
+- Firebase Authentication (e-mail/senha + Google) e Cloud Firestore para dados.
+- Interface responsiva focada em desktop/web com cartões, listas e máscaras de entrada.
+- Injeção de dependências via `DependenciasWidget` para facilitar testes e mocks.
+- Testes de widget usando `fake_cloud_firestore` e `firebase_auth_mocks`.
 
-## Estrutura atual
+## Funcionalidades
+
+- Login e cadastro com e-mail/senha; suporte a login com Google (inclui ajuste de `client_id` para web).
+- Dashboard com saudação personalizada e pré-visualização dos próximos agendamentos.
+- Listagem de agendamentos com data/hora formatadas (`intl`) e destaque do valor.
+- CRUD básico de clientes com máscara de telefone e campos opcionais (nascimento, observações).
+- Catálogo de serviços com duração, preço (máscara de moeda) e CTA para agendamento.
+- Componentes reutilizáveis (`Input`, `Button`, `FloatingButton`, `Select`) e formatadores customizados.
+
+## Estrutura do Projeto
 
 ```
 lib/
-├── app.dart           → Configuração do `MaterialApp` e tema
-├── main.dart          → Função `main()` que inicia o app
-└── screens/           → Telas estáticas do projeto
-		├── home_screen.dart
-		├── appointments_screen.dart
-		├── clients_screen.dart
-		└── services_screen.dart
+├── app.dart                 # MaterialApp, tema e rotas nomeadas
+├── main.dart                # Bootstrap e inicialização do Firebase
+├── components/              # Inputs, botões e elementos de UI
+├── dependencias/            # InheritedWidget para fornecer serviços
+├── formatters/              # Máscaras para moeda e telefone
+├── modelos/                 # Modelos (cliente, serviço, agendamento)
+├── screens/                 # Telas principais (login, home, clientes, serviços...)
+└── servicos/                # Camada de acesso ao Firebase (auth, Firestore)
+test/
+└── widget_test.dart         # Garantia de fluxo de login quando não autenticado
+web/
+└── index.html               # Meta tag do Google Sign-In (client_id)
 ```
 
-O teste de interface em `test/widget_test.dart` garante que a tela inicial continue exibindo os principais elementos.
+## Pré-requisitos
 
-## Como rodar
+- Flutter 3.24.x+ (`flutter --version`).
+- Conta Firebase com Authentication e Cloud Firestore habilitados.
+- Para web: projeto OAuth 2.0 com domínio registrado e `client_id` liberado.
+
+## Configuração do Firebase
+
+1. **Projeto Firebase**: crie um projeto e habilite provedores de e-mail/senha e Google em Authentication.
+2. **Firestore**: crie as coleções `appointments`, `clients` e `services` (as estruturas são definidas pelos serviços).
+3. **Credenciais**:
+   - O app inicializa o Firebase diretamente em `lib/main.dart` usando `FirebaseOptions`. Atualize esses valores com as credenciais do seu projeto.
+   - Alternativa recomendada: execute `flutterfire configure` e substitua a inicialização manual por `DefaultFirebaseOptions.currentPlatform`. Guarde as chaves fora do controle de versão.
+   - `.env.example` documenta os campos necessários caso opte por carregar variáveis de ambiente via outro mecanismo.
+4. **Login Google (Web)**: atualize `web/index.html` com o `client_id` do OAuth Web no meta `google-signin-client_id`.
+
+## Como Executar
+
 ```powershell
 flutter pub get
-flutter run
+flutter run --device-id chrome   # ou outro device disponível
 ```
 
-## Como testar
+Observações:
+
+- Garanta que o Flutter Web esteja habilitado (`flutter config --enable-web`).
+- Para Android/iOS, configure `google-services.json` / `GoogleService-Info.plist` normalmente.
+- Caso use conta Google no web, acesse pelo domínio autorizado no console Firebase.
+
+## Testes
+
 ```powershell
 flutter test
 ```
 
-## Como criar uma nova tela
-1. Crie um arquivo em `lib/screens/<nome>_screen.dart`.
-2. Declare um `StatelessWidget` (ou `StatefulWidget`, se precisar de estado local) e defina uma constante `routeName`.
-3. Registre a nova rota no mapa `routes` de `SalonSchedulerApp` em `lib/app.dart`.
-4. Use `Navigator.pushNamed(context, NovaTela.routeName)` a partir de qualquer lugar do app.
+O teste principal valida se a tela de login aparece quando não há usuário autenticado, utilizando fakes de Firebase.
 
-Exemplo mínimo:
+## Coleções do Firestore
 
-```dart
-// lib/screens/example_screen.dart
-import 'package:flutter/material.dart';
+- `clients`: `nome`, `telefone`, `email?`, `dataNascimento?`, `observacoes?`, `criadoEm`.
+- `services`: `nome`, `duracaoMinutos`, `preco`, `descricao?`, `ativo`, `criadoEm`.
+- `appointments`: `inicio`, `duracaoMinutos`, `clienteNome`, `servicoNome`, `preco?`, `observacoes?`, `criadoEm`.
 
-class ExampleScreen extends StatelessWidget {
-	const ExampleScreen({super.key});
+## Comandos Úteis
 
-	static const routeName = '/example';
-
-	@override
-	Widget build(BuildContext context) {
-		return Scaffold(
-			appBar: AppBar(title: const Text('Exemplo')),
-			body: const Center(child: Text('Nova tela')),
-		);
-	}
-}
-```
-
-Depois, edite `app.dart`:
-
-```dart
-import 'screens/example_screen.dart';
-
-routes: {
-	...
-	ExampleScreen.routeName: (context) => const ExampleScreen(),
-},
-```
-
-Com isso, você pode navegar usando `Navigator.pushNamed(context, ExampleScreen.routeName);`.
+- `flutter pub upgrade` – atualizar dependências.
+- `flutter analyze` – executar análise estática (usa regras do `analysis_options.yaml`).
+- `flutterfire configure` – gerar `firebase_options.dart` oficial.
