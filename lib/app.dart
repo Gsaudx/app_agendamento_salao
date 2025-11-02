@@ -1,3 +1,4 @@
+import 'package:app_paula_barros/screens/newappointmens_screen.dart';
 import 'package:flutter/material.dart';
 
 import 'dependencias/dependencias_widget.dart';
@@ -57,6 +58,8 @@ class SalonSchedulerApp extends StatelessWidget {
           ServicesScreen.routeName: (context) => const ServicesScreen(),
           NewClientScreen.routeName: (context) => const NewClientScreen(),
           EditClientScreen.routeName: (context) => const EditClientScreen(),
+          NewAppointmentScreen.routeName: (context) =>
+              const NewAppointmentScreen(),
         },
         debugShowCheckedModeBanner: false,
         builder: (context, child) {
@@ -64,17 +67,14 @@ class SalonSchedulerApp extends StatelessWidget {
           if (overlay == null) {
             return child ?? const SizedBox.shrink();
           }
-          return SelectionArea(
-            child: child ?? const SizedBox.shrink(),
-          );
+          return SelectionArea(child: child ?? const SizedBox.shrink());
         },
       ),
     );
   }
 
   ThemeData _buildTheme() {
-    const seed = Color(0xFF9C27B0);
-    final scheme = ColorScheme.fromSeed(seedColor: seed);
+    final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFFEC8C8));
     return ThemeData(
       colorScheme: scheme,
       useMaterial3: true,

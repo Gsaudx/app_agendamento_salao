@@ -202,6 +202,7 @@ class ServicesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Serviços'),
+        backgroundColor: const Color.fromARGB(255, 252, 218, 218),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
@@ -317,10 +318,7 @@ class ServicesScreen extends StatelessWidget {
                                   ),
                                   visualDensity: VisualDensity.compact,
                                 ),
-                                icon: const Icon(
-                                  Icons.edit_outlined,
-                                  size: 18,
-                                ),
+                                icon: const Icon(Icons.edit_outlined, size: 18),
                                 label: const Text('Editar'),
                               ),
                               const SizedBox(width: 8),
