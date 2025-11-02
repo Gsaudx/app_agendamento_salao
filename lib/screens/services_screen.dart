@@ -306,20 +306,40 @@ class ServicesScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          FilledButton.tonalIcon(
-                            onPressed: () {},
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
+                          Row(
+                            children: [
+                              FilledButton.tonalIcon(
+                                onPressed: () => _addService(context),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                icon: const Icon(
+                                  Icons.edit_outlined,
+                                  size: 18,
+                                ),
+                                label: const Text('Editar'),
                               ),
-                              visualDensity: VisualDensity.compact,
-                            ),
-                            icon: const Icon(
-                              Icons.calendar_today_outlined,
-                              size: 18,
-                            ),
-                            label: const Text('Agendar'),
+                              const SizedBox(width: 8),
+                              FilledButton.tonalIcon(
+                                onPressed: () {},
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                icon: const Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 18,
+                                ),
+                                label: const Text('Agendar'),
+                              ),
+                            ],
                           ),
                         ],
                       ),
