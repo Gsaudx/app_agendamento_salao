@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+// Preservando as importações do usuário (assumindo que dependencias_widget.dart e home_screen.dart existem)
 import 'package:app_paula_barros/dependencias/dependencias_widget.dart';
-
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -32,150 +32,183 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // Corrigido: As chaves e parênteses que estavam fora de ordem na lista children
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
     return Scaffold(
+      backgroundColor: const Color(0xFFFEC8C8),
       body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _modoCadastro ? 'Crie sua conta' : 'Acesse sua conta',
-                        style: tema.textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 24),
-                      if (_modoCadastro) ...[
-                        TextFormField(
-                          controller: _nomeController,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(
-                            labelText: 'Nome completo',
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (valor) {
-                            if (!_modoCadastro) {
-                              return null;
-                            }
-                            if (valor == null || valor.trim().isEmpty) {
-                              return 'Informe seu nome';
-                            }
-                            if (valor.trim().length < 2) {
-                              return 'Nome muito curto';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'E-mail',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (valor) {
-                          if (valor == null || valor.trim().isEmpty) {
-                            return 'Informe o e-mail';
-                          }
-                          if (!valor.contains('@')) {
-                            return 'E-mail inválido';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _senhaController,
-                        obscureText: !_exibindoSenha,
-                        decoration: InputDecoration(
-                          labelText: 'Senha',
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _exibindoSenha = !_exibindoSenha;
-                              });
-                            },
-                            icon: Icon(
-                              _exibindoSenha
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 1. Logo
+              Padding(
+                padding: const EdgeInsets.only(top: 48.0, bottom: 24.0),
+                child: Image.asset(
+                  'assets/img/logo_paula_barros.png',
+                  height: 240,
+                ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Card(
+                    color: const Color.fromARGB(255, 252, 218, 218),
+                    elevation: 50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _modoCadastro
+                                  ? 'Registre-se'
+                                  : 'Login',
+                              style: tema.textTheme.headlineSmall,
                             ),
-                          ),
-                        ),
-                        validator: (valor) {
-                          if (valor == null || valor.trim().isEmpty) {
-                            return 'Informe a senha';
-                          }
-                          if (valor.length < 6) {
-                            return 'A senha deve ter ao menos 6 caracteres';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: _carregandoEmailSenha
-                              ? null
-                              : _autenticarEmailSenha,
-                          child: _carregandoEmailSenha
-                              ? const SizedBox(
-                                  height: 16,
-                                  width: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                            const SizedBox(height: 24),
+                            // Campo Nome
+                            if (_modoCadastro) ...[
+                              TextFormField(
+                                controller: _nomeController,
+                                textCapitalization: TextCapitalization.words,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nome completo',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (valor) {
+                                  if (!_modoCadastro) {
+                                    return null;
+                                  }
+                                  if (valor == null || valor.trim().isEmpty) {
+                                    return 'Informe seu nome';
+                                  }
+                                  if (valor.trim().length < 2) {
+                                    return 'Nome muito curto';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            // Campo E-mail
+                            TextFormField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: const InputDecoration(
+                                labelText: 'E-mail',
+                                border: OutlineInputBorder(),
+                              ),
+                              validator: (valor) {
+                                if (valor == null || valor.trim().isEmpty) {
+                                  return 'Informe o e-mail';
+                                }
+                                if (!valor.contains('@')) {
+                                  return 'E-mail inválido';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            // Campo Senha
+                            TextFormField(
+                              controller: _senhaController,
+                              obscureText: !_exibindoSenha,
+                              decoration: InputDecoration(
+                                labelText: 'Senha',
+                                border: const OutlineInputBorder(),
+                                suffixIcon: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _exibindoSenha = !_exibindoSenha;
+                                    });
+                                  },
+                                  icon: Icon(
+                                    _exibindoSenha
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
                                   ),
-                                )
-                              : Text(_modoCadastro ? 'Cadastrar' : 'Entrar'),
+                                ),
+                              ),
+                              validator: (valor) {
+                                if (valor == null || valor.trim().isEmpty) {
+                                  return 'Informe a senha';
+                                }
+                                if (valor.length < 6) {
+                                  return 'A senha deve ter ao menos 6 caracteres';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                            // Botão Entrar/Cadastrar (E-mail/Senha)
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton(
+                                onPressed: _carregandoEmailSenha
+                                    ? null
+                                    : _autenticarEmailSenha,
+                                child: _carregandoEmailSenha
+                                    ? const SizedBox(
+                                        height: 16,
+                                        width: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          // Adicionei uma cor para ser visível
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                    : Text(
+                                        _modoCadastro ? 'Cadastrar' : 'Entrar',
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Botão Entrar com Google
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: _carregandoGoogle
+                                    ? null
+                                    : _autenticarGoogle,
+                                icon: _carregandoGoogle
+                                    ? const SizedBox(
+                                        height: 16,
+                                        width: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.login),
+                                label: const Text('Entrar com Google'),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Botão Alternar Modo
+                            TextButton(
+                              onPressed: _alternarModo,
+                              child: Text(
+                                _modoCadastro
+                                    ? 'Já tenho conta, voltar para login'
+                                    : 'Criar uma conta',
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _carregandoGoogle
-                              ? null
-                              : _autenticarGoogle,
-                          icon: _carregandoGoogle
-                              ? const SizedBox(
-                                  height: 16,
-                                  width: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.login),
-                          label: const Text('Entrar com Google'),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: _alternarModo,
-                        child: Text(
-                          _modoCadastro
-                              ? 'Já tenho conta, voltar para login'
-                              : 'Criar uma conta',
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -188,8 +221,12 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!_modoCadastro) {
         _nomeController.clear();
       }
+      // Garante que o estado de validação do formulário seja redefinido
+      _formKey.currentState?.reset();
     });
   }
+
+  // --- LÓGICA DE AUTENTICAÇÃO ---
 
   Future<void> _autenticarEmailSenha() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
@@ -198,6 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _carregandoEmailSenha = true;
     });
+    // Uso de DependenciasWidget (mantido conforme código original)
     final autenticacao = DependenciasWidget.autenticacaoDe(context);
     final email = _emailController.text.trim();
     final senha = _senhaController.text.trim();
@@ -218,6 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) {
         return;
       }
+      // Navega para a HomeScreen
       Navigator.pushNamedAndRemoveUntil(
         context,
         HomeScreen.routeName,
@@ -240,12 +279,14 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _carregandoGoogle = true;
     });
+    // Uso de DependenciasWidget (mantido conforme código original)
     final autenticacao = DependenciasWidget.autenticacaoDe(context);
     try {
       await autenticacao.entrarGoogle();
       if (!mounted) {
         return;
       }
+      // Navega para a HomeScreen
       Navigator.pushNamedAndRemoveUntil(
         context,
         HomeScreen.routeName,
@@ -254,6 +295,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (erro) {
       _exibirMensagemErro(erro.message ?? 'Falha ao entrar com Google.');
     } on StateError catch (erro) {
+      // Verifica se o erro é o cancelamento do login pelo usuário
       if (erro.message.contains('cancelada')) {
         _exibirMensagemErro('Login cancelado.');
       }
