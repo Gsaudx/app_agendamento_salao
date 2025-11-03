@@ -1,3 +1,4 @@
+import 'package:app_paula_barros/screens/newappointmens_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -78,7 +79,7 @@ class HomeScreen extends StatelessWidget {
       floatingActionButton: FloatingButton(
         label: 'Novo agendamento',
         onPressed: () =>
-            Navigator.pushNamed(context, AppointmentsScreen.routeName),
+            Navigator.pushNamed(context, NewAppointmentScreen.routeName),
       ),
     );
   }
