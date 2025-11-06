@@ -13,13 +13,25 @@ class ServicesScreen extends StatelessWidget {
 
   static const routeName = '/services';
 
-  Future<void> _addService(BuildContext context) async {
+  Future<void> _openServiceDialog(
+    BuildContext context, {
+    Servico? servico,
+  }) async {
     final servicosServico = DependenciasWidget.servicosDe(context);
-    final nomeController = TextEditingController();
-    final precoController = TextEditingController();
-    final descricaoController = TextEditingController();
+    final nomeController = TextEditingController(text: servico?.nome ?? '');
+    final precoController = TextEditingController(
+      text: servico != null
+          ? NumberFormat.currency(
+              locale: 'pt_BR',
+              symbol: '',
+            ).format(servico.preco).trim()
+          : '',
+    );
+    final descricaoController = TextEditingController(
+      text: servico?.descricao ?? '',
+    );
     const duracoesDisponiveis = <int>[30, 45, 60, 90, 120];
-    int? duracaoSelecionada;
+    int? duracaoSelecionada = servico?.duracaoMinutos;
     bool salvando = false;
 
     final resultado = await showDialog<bool>(
@@ -53,7 +65,9 @@ class ServicesScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Adicionar serviço',
+                          servico == null
+                              ? 'Adicionar serviço'
+                              : 'Editar serviço',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         Input(
@@ -127,18 +141,37 @@ class ServicesScreen extends StatelessWidget {
                                         }
                                         setState(() => salvando = true);
                                         try {
-                                          await servicosServico.criarServico(
-                                            nome: nome,
-                                            duracaoMinutos: duracaoSelecionada!,
-                                            preco: preco,
-                                            descricao:
-                                                descricaoController.text
-                                                    .trim()
-                                                    .isEmpty
-                                                ? null
-                                                : descricaoController.text
-                                                      .trim(),
-                                          );
+                                          if (servico == null) {
+                                            await servicosServico.criarServico(
+                                              nome: nome,
+                                              duracaoMinutos:
+                                                  duracaoSelecionada!,
+                                              preco: preco,
+                                              descricao:
+                                                  descricaoController.text
+                                                      .trim()
+                                                      .isEmpty
+                                                  ? null
+                                                  : descricaoController.text
+                                                        .trim(),
+                                            );
+                                          } else {
+                                            await servicosServico
+                                                .atualizarServico(
+                                                  servico.id,
+                                                  nome: nome,
+                                                  duracaoMinutos:
+                                                      duracaoSelecionada!,
+                                                  preco: preco,
+                                                  descricao:
+                                                      descricaoController.text
+                                                          .trim()
+                                                          .isEmpty
+                                                      ? null
+                                                      : descricaoController.text
+                                                            .trim(),
+                                                );
+                                          }
                                           if (context.mounted) {
                                             Navigator.of(
                                               dialogContext,
@@ -187,9 +220,19 @@ class ServicesScreen extends StatelessWidget {
     precoController.dispose();
     descricaoController.dispose();
 
+    nomeController.dispose();
+    precoController.dispose();
+    descricaoController.dispose();
+
     if (resultado == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Serviço cadastrado com sucesso.')),
+        SnackBar(
+          content: Text(
+            servico == null
+                ? 'Serviço cadastrado com sucesso.'
+                : 'Serviço atualizado com sucesso.',
+          ),
+        ),
       );
     }
   }
@@ -208,7 +251,7 @@ class ServicesScreen extends StatelessWidget {
             padding: const EdgeInsets.only(right: 16.0),
             child: IconButton(
               onPressed: () {
-                _addService(context);
+                _openServiceDialog(context);
               },
               icon: const Icon(Icons.add),
             ),
@@ -310,7 +353,10 @@ class ServicesScreen extends StatelessWidget {
                           Row(
                             children: [
                               FilledButton.tonalIcon(
-                                onPressed: () => _addService(context),
+                                onPressed: () => _openServiceDialog(
+                                  context,
+                                  servico: servico,
+                                ),
                                 style: FilledButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
