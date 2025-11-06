@@ -51,4 +51,15 @@ class Cliente {
         'dataNascimento': Timestamp.fromDate(dataNascimento!),
     };
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is Cliente && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }
