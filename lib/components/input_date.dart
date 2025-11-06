@@ -4,12 +4,14 @@ class InputDate extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final TextInputType keyboardType;
+  final ValueChanged<DateTime>? onDateSelected;
 
   const InputDate({
     super.key,
     required this.label,
     required this.controller,
     this.keyboardType = TextInputType.datetime,
+    this.onDateSelected,
   });
 
   @override
@@ -51,6 +53,7 @@ class InputDate extends StatelessWidget {
           if (picked != null) {
             controller.text =
                 '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+            onDateSelected?.call(picked);
           }
         },
       ),

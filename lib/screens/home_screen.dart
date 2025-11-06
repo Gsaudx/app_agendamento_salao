@@ -144,7 +144,7 @@ class _AgendaPreview extends StatelessWidget {
                       ),
                     ),
                     title: Text(agendamento.clienteNome),
-                    subtitle: Text(agendamento.servicoNome),
+                    subtitle: Text(agendamento.descricaoServicos),
                     trailing: const Icon(Icons.navigate_next),
                     onTap: () => Navigator.pushNamed(
                       context,
