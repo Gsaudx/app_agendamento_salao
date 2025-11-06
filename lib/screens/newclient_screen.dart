@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../components/button.dart';
-import '../components/input.dart';
+import '../components/Input.dart';
 import '../components/input_date.dart';
 import '../components/input_textarea.dart';
 import '../dependencias/dependencias_widget.dart';

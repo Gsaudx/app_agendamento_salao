@@ -2,7 +2,7 @@ import 'package:app_paula_barros/components/select.dart';
 import 'package:flutter/material.dart';
 
 import '../components/button.dart';
-import '../components/input.dart';
+import '../components/Input.dart';
 import '../components/input_date.dart';
 import '../components/input_textarea.dart';
 import '../formatters/telefone_input_formatter.dart';
