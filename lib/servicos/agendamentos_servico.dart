@@ -46,19 +46,32 @@ class AgendamentosServico {
   }
 
   Future<void> criarAgendamento({
-    required DateTime inicio,
-    required int duracaoMinutos,
+    required String clienteId,
     required String clienteNome,
-    required String servicoNome,
-    double? preco,
+    required DateTime inicio,
+    required DateTime fim,
+    required List<AgendamentoServicoResumo> servicos,
+    required double total,
     String? observacoes,
   }) async {
+    final servicosMap = servicos.map((servico) => servico.toMap()).toList();
+    final duracaoMinutos = servicos.fold<int>(
+      0,
+      (total, servico) => total + servico.duracaoMinutos,
+    );
+    final descricaoServicos = servicos
+        .map((servico) => servico.nome)
+        .join(', ');
     await _colecao.add({
-      'inicio': Timestamp.fromDate(inicio),
-      'duracaoMinutos': duracaoMinutos,
+      'clienteId': clienteId,
       'clienteNome': clienteNome,
-      'servicoNome': servicoNome,
-      if (preco != null) 'preco': preco,
+      'inicio': Timestamp.fromDate(inicio),
+      'fim': Timestamp.fromDate(fim),
+      'duracaoMinutos': duracaoMinutos,
+      'servicos': servicosMap,
+      'total': total,
+      'preco': total,
+      'servicoNome': descricaoServicos,
       if (observacoes != null && observacoes.isNotEmpty)
         'observacoes': observacoes,
       'criadoEm': FieldValue.serverTimestamp(),

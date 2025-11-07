@@ -46,11 +46,17 @@ class AppointmentsScreen extends StatelessWidget {
             itemCount: agendamentos.length,
             itemBuilder: (context, index) {
               final agendamento = agendamentos[index];
+              final horaInicio = formatadorHora.format(agendamento.inicio);
+              final horaFim = agendamento.fim != null
+                  ? formatadorHora.format(agendamento.fim!)
+                  : formatadorHora.format(
+                      agendamento.inicio.add(
+                        Duration(minutes: agendamento.duracaoMinutos),
+                      ),
+                    );
               final dataFormatada =
-                  '${formatadorData.format(agendamento.inicio)} • ${formatadorHora.format(agendamento.inicio)}';
-              final precoFormatado = agendamento.preco != null
-                  ? formatadorMoeda.format(agendamento.preco)
-                  : '—';
+                  '${formatadorData.format(agendamento.inicio)} • $horaInicio - $horaFim';
+              final precoFormatado = formatadorMoeda.format(agendamento.total);
               return Card(
                 child: ListTile(
                   title: Text(agendamento.clienteNome),
@@ -58,7 +64,7 @@ class AppointmentsScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 4),
-                      Text(agendamento.servicoNome),
+                      Text(agendamento.descricaoServicos),
                       const SizedBox(height: 4),
                       Text(
                         dataFormatada,
