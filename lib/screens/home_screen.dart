@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:app_paula_barros/screens/newappointmens_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
   late final AutenticacaoServico _autenticacao;
   late final AgendamentosServico _agendamentosServico;
   late final TextEditingController _buscaController;
+  Timer? _debounce;
+  String _termoBusca = '';
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateUtils.dateOnly(DateTime.now());
@@ -31,8 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _buscaController = TextEditingController()
-      ..addListener(() => setState(() {}));
+    _buscaController = TextEditingController();
   }
 
   @override
@@ -44,8 +48,40 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _buscaController.dispose();
     super.dispose();
+  }
+
+  void _onBuscaAlterada(String texto) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 450), () {
+      if (!mounted) {
+        return;
+      }
+      final novoTermo = texto.trim();
+      if (novoTermo != _termoBusca) {
+        setState(() => _termoBusca = novoTermo);
+      }
+    });
+  }
+
+  void _confirmarBusca() {
+    _debounce?.cancel();
+    final textoAtual = _buscaController.text.trim();
+    if (textoAtual != _termoBusca) {
+      setState(() => _termoBusca = textoAtual);
+    }
+    FocusScope.of(context).unfocus();
+  }
+
+  double _alturaCalendario(BuildContext context) {
+    final alturaTela = MediaQuery.of(context).size.height;
+    final maximoPermitido = math.max(alturaTela * 0.6, 320.0);
+    final desejado = _calendarFormat == CalendarFormat.month ? 420.0 : 260.0;
+    final minimo = _calendarFormat == CalendarFormat.month ? 320.0 : 200.0;
+    final ajustado = desejado.clamp(minimo, maximoPermitido);
+    return ajustado.toDouble();
   }
 
   @override
@@ -89,91 +125,155 @@ class _HomeScreenState extends State<HomeScreen> {
                 eventosPorDia[_selectedDay] ?? const <Agendamento>[];
             final filtrados = _aplicarFiltro(selecionados);
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bem-vindo(a), $saudacao!',
-                  style: tema.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Controle seus agendamentos com facilidade.',
-                  style: tema.textTheme.bodyLarge,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _buscaController,
-                  decoration: InputDecoration(
-                    hintText: 'Busca por cliente, serviço ou observação',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _SegmentedPeriodSelector(
-                  visaoSelecionada: _visaoSelecionada,
-                  onChange: _alterarVisao,
-                ),
-                const SizedBox(height: 16),
-                Flexible(
-                  child: TableCalendar<Agendamento>(
-                    locale: 'pt_BR',
-                    firstDay: DateTime.utc(2020, 1, 1),
-                    lastDay: DateTime.utc(2035, 12, 31),
-                    focusedDay: _focusedDay,
-                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                    calendarFormat: _calendarFormat,
-                    availableGestures: AvailableGestures.horizontalSwipe,
-                    eventLoader: (day) =>
-                        eventosPorDia[DateUtils.dateOnly(day)] ?? const [],
-                    onDaySelected: (selected, focused) {
-                      setState(() {
-                        _selectedDay = DateUtils.dateOnly(selected);
-                        _focusedDay = focused;
-                      });
-                    },
-                    onFormatChanged: (format) {
-                      setState(() => _calendarFormat = format);
-                    },
-                    calendarBuilders: CalendarBuilders(
-                      markerBuilder: (context, day, events) {
-                        if (events.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-                        return _IndicadoresAgendamento(
-                          eventos: events.cast<Agendamento>(),
-                        );
-                      },
-                    ),
-                    headerStyle: HeaderStyle(
-                      formatButtonVisible: false,
-                      titleCentered: true,
-                      titleTextFormatter: (date, locale) =>
-                          DateFormat.yMMMM('pt_BR').format(date),
-                      leftChevronIcon: const Icon(Icons.chevron_left),
-                      rightChevronIcon: const Icon(Icons.chevron_right),
-                    ),
-                    daysOfWeekStyle: DaysOfWeekStyle(
-                      weekendStyle:
-                          (tema.textTheme.bodySmall ?? const TextStyle())
-                              .copyWith(color: tema.colorScheme.primary),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: filtrados.isEmpty
-                      ? _ListaVazia(selectedDay: _selectedDay)
-                      : _ListaAgendamentos(
-                          agendamentos: filtrados,
-                          onTap: _mostrarDetalhes,
+            final alturaCalendario = _alturaCalendario(context);
+            final possuiResultados = filtrados.isNotEmpty;
+            const alturaCabecalhoEstimado = 68.0;
+            const alturaDiasSemana = 24.0;
+            final linhasCalendario = _calendarFormat == CalendarFormat.month
+                ? 6
+                : 1;
+            final alturaDisponivelCorpo =
+                alturaCalendario - alturaCabecalhoEstimado - alturaDiasSemana;
+            final rowHeight = (alturaDisponivelCorpo / linhasCalendario).clamp(
+              36.0,
+              80.0,
+            );
+
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Bem-vindo(a), $saudacao!',
+                        style: tema.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Controle seus agendamentos com facilidade.',
+                        style: tema.textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _buscaController,
+                        onChanged: _onBuscaAlterada,
+                        onEditingComplete: _confirmarBusca,
+                        onSubmitted: (_) => _confirmarBusca(),
+                        textInputAction: TextInputAction.search,
+                        decoration: InputDecoration(
+                          hintText: 'Busca por cliente, serviço ou observação',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: IconButton(
+                            tooltip: 'Buscar',
+                            onPressed: _confirmarBusca,
+                            icon: const Icon(Icons.search),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _SegmentedPeriodSelector(
+                        visaoSelecionada: _visaoSelecionada,
+                        onChange: _alterarVisao,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: alturaCalendario,
+                    child: TableCalendar<Agendamento>(
+                      locale: 'pt_BR',
+                      firstDay: DateTime.utc(2020, 1, 1),
+                      lastDay: DateTime.utc(2035, 12, 31),
+                      focusedDay: _focusedDay,
+                      selectedDayPredicate: (day) =>
+                          isSameDay(_selectedDay, day),
+                      calendarFormat: _calendarFormat,
+                      availableGestures: AvailableGestures.horizontalSwipe,
+                      eventLoader: (day) =>
+                          eventosPorDia[DateUtils.dateOnly(day)] ?? const [],
+                      onDaySelected: (selected, focused) {
+                        setState(() {
+                          _selectedDay = DateUtils.dateOnly(selected);
+                          _focusedDay = focused;
+                        });
+                      },
+                      onFormatChanged: (format) {
+                        setState(() => _calendarFormat = format);
+                      },
+                      calendarBuilders: CalendarBuilders(
+                        markerBuilder: (context, day, events) {
+                          if (events.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return _IndicadoresAgendamento(
+                            eventos: events.cast<Agendamento>(),
+                          );
+                        },
+                      ),
+                      headerStyle: HeaderStyle(
+                        formatButtonVisible: false,
+                        titleCentered: true,
+                        headerPadding: const EdgeInsets.only(bottom: 8),
+                        titleTextFormatter: (date, locale) =>
+                            DateFormat.yMMMM('pt_BR').format(date),
+                        leftChevronIcon: const Icon(Icons.chevron_left),
+                        rightChevronIcon: const Icon(Icons.chevron_right),
+                      ),
+                      daysOfWeekStyle: DaysOfWeekStyle(
+                        weekendStyle:
+                            (tema.textTheme.bodySmall ?? const TextStyle())
+                                .copyWith(color: tema.colorScheme.primary),
+                      ),
+                      daysOfWeekHeight: alturaDiasSemana,
+                      rowHeight: rowHeight.toDouble(),
+                      calendarStyle: const CalendarStyle(
+                        outsideDaysVisible: false,
+                        tablePadding: EdgeInsets.symmetric(vertical: 4),
+                        cellMargin: EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (possuiResultados)
+                  SliverPadding(
+                    padding: const EdgeInsets.only(top: 12, bottom: 88),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final agendamento = filtrados[index];
+                        final paddingInferior = index == filtrados.length - 1
+                            ? 0.0
+                            : 8.0;
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: paddingInferior),
+                          child: _AgendamentoCard(
+                            agendamento: agendamento,
+                            onTap: _mostrarDetalhes,
+                          ),
+                        );
+                      }, childCount: filtrados.length),
+                    ),
+                  )
+                else
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12, bottom: 88),
+                      child: _ListaVazia(selectedDay: _selectedDay),
+                    ),
+                  ),
               ],
             );
           },
@@ -202,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Agendamento> _aplicarFiltro(List<Agendamento> agendamentos) {
-    final termo = _buscaController.text.trim().toLowerCase();
+    final termo = _termoBusca.toLowerCase();
     if (termo.isEmpty) {
       return agendamentos;
     }
@@ -406,10 +506,10 @@ class _IndicadoresAgendamento extends StatelessWidget {
   }
 }
 
-class _ListaAgendamentos extends StatelessWidget {
-  const _ListaAgendamentos({required this.agendamentos, required this.onTap});
+class _AgendamentoCard extends StatelessWidget {
+  const _AgendamentoCard({required this.agendamento, required this.onTap});
 
-  final List<Agendamento> agendamentos;
+  final Agendamento agendamento;
   final ValueChanged<Agendamento> onTap;
 
   @override
@@ -417,43 +517,34 @@ class _ListaAgendamentos extends StatelessWidget {
     final tema = Theme.of(context);
     final formatadorHora = DateFormat.Hm('pt_BR');
     final formatadorMoeda = NumberFormat.simpleCurrency(locale: 'pt_BR');
-    return ListView.separated(
-      itemCount: agendamentos.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final agendamento = agendamentos[index];
-        final horaInicio = formatadorHora.format(agendamento.inicio);
-        final horaFim = formatadorHora.format(
-          agendamento.fim ??
-              agendamento.inicio.add(
-                Duration(minutes: agendamento.duracaoMinutos),
-              ),
-        );
-        return Card(
-          child: ListTile(
-            title: Text(agendamento.clienteNome),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text('$horaInicio - $horaFim'),
-                const SizedBox(height: 4),
-                Text(
-                  agendamento.descricaoServicos,
-                  style: tema.textTheme.bodySmall,
-                ),
-              ],
+    final horaInicio = formatadorHora.format(agendamento.inicio);
+    final horaFim = formatadorHora.format(
+      agendamento.fim ??
+          agendamento.inicio.add(Duration(minutes: agendamento.duracaoMinutos)),
+    );
+    return Card(
+      child: ListTile(
+        title: Text(agendamento.clienteNome),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text('$horaInicio - $horaFim'),
+            const SizedBox(height: 4),
+            Text(
+              agendamento.descricaoServicos,
+              style: tema.textTheme.bodySmall,
             ),
-            trailing: Text(
-              formatadorMoeda.format(agendamento.total),
-              style: tema.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            onTap: () => onTap(agendamento),
+          ],
+        ),
+        trailing: Text(
+          formatadorMoeda.format(agendamento.total),
+          style: tema.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
-        );
-      },
+        ),
+        onTap: () => onTap(agendamento),
+      ),
     );
   }
 }
