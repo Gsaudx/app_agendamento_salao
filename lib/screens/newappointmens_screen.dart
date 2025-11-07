@@ -13,10 +13,15 @@ import '../modelos/cliente.dart';
 import '../modelos/servico.dart';
 
 class NewAppointmentScreenArguments {
-  const NewAppointmentScreenArguments({this.dia, this.horaInicial});
+  const NewAppointmentScreenArguments({
+    this.dia,
+    this.horaInicial,
+    this.agendamento,
+  });
 
   final DateTime? dia;
   final TimeOfDay? horaInicial;
+  final Agendamento? agendamento;
 }
 
 class NewAppointmentScreen extends StatefulWidget {
@@ -42,9 +47,13 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
   TimeOfDay? _horaFim;
   bool _salvando = false;
   int _duracaoTotalMinutos = 0;
+  Agendamento? _agendamentoOriginal;
+  bool _clientePrefillAplicado = false;
 
   late final List<TimeOfDay> _horarios;
   bool _argumentosAplicados = false;
+
+  bool get _modoEdicao => _agendamentoOriginal != null;
 
   @override
   void initState() {
@@ -61,19 +70,42 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
     }
     final argumentos = ModalRoute.of(context)?.settings.arguments;
     if (argumentos is NewAppointmentScreenArguments) {
-      if (argumentos.dia != null) {
-        final dia = DateUtils.dateOnly(argumentos.dia!);
+      if (argumentos.agendamento != null) {
+        _agendamentoOriginal = argumentos.agendamento;
+        final agendamento = argumentos.agendamento!;
+        final dia = DateUtils.dateOnly(agendamento.inicio);
         _dataSelecionada = dia;
-        _dataController.text =
-            '${dia.day.toString().padLeft(2, '0')}/${dia.month.toString().padLeft(2, '0')}/${dia.year}';
-      }
-      if (argumentos.horaInicial != null) {
-        final horaAjustada = _alinharParaGrade(argumentos.horaInicial!);
-        _horaInicio = horaAjustada;
-        _horaFim = _calcularFim(
-          horaAjustada,
-          _duracaoTotalMinutos > 0 ? _duracaoTotalMinutos : 60,
-        );
+        _dataController.text = DateFormat('dd/MM/yyyy').format(dia);
+        _horaInicio = TimeOfDay.fromDateTime(agendamento.inicio);
+        final fimCalculado =
+            agendamento.fim ??
+            agendamento.inicio.add(
+              Duration(minutes: agendamento.duracaoMinutos),
+            );
+        _horaFim = TimeOfDay.fromDateTime(fimCalculado);
+        _duracaoTotalMinutos = agendamento.duracaoMinutos;
+        _valorController.text = _moedaFormatador
+            .format(agendamento.total)
+            .trim();
+        _observacoesController.text = agendamento.observacoes ?? '';
+        _servicosSelecionados
+          ..clear()
+          ..addAll(agendamento.servicos.map((servico) => servico.id));
+      } else {
+        if (argumentos.dia != null) {
+          final dia = DateUtils.dateOnly(argumentos.dia!);
+          _dataSelecionada = dia;
+          _dataController.text =
+              '${dia.day.toString().padLeft(2, '0')}/${dia.month.toString().padLeft(2, '0')}/${dia.year}';
+        }
+        if (argumentos.horaInicial != null) {
+          final horaAjustada = _alinharParaGrade(argumentos.horaInicial!);
+          _horaInicio = horaAjustada;
+          _horaFim = _calcularFim(
+            horaAjustada,
+            _duracaoTotalMinutos > 0 ? _duracaoTotalMinutos : 60,
+          );
+        }
       }
     }
     _argumentosAplicados = true;
@@ -95,7 +127,7 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 252, 218, 218),
-        title: const Text('Novo Agendamento'),
+        title: Text(_modoEdicao ? 'Editar Agendamento' : 'Novo Agendamento'),
       ),
       body: StreamBuilder<List<Cliente>>(
         stream: clientesServico.observarClientes(),
@@ -111,6 +143,18 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
             return const _AvisoVazio(
               mensagem: 'Cadastre um cliente antes de criar um agendamento.',
             );
+          }
+
+          if (_modoEdicao && !_clientePrefillAplicado) {
+            try {
+              final clienteEncontrado = clientes.firstWhere(
+                (cliente) => cliente.id == _agendamentoOriginal?.clienteId,
+              );
+              _clienteSelecionado = clienteEncontrado;
+            } catch (_) {
+              _clienteSelecionado = null;
+            }
+            _clientePrefillAplicado = true;
           }
 
           return StreamBuilder<List<Servico>>(
@@ -246,7 +290,7 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
                     const SizedBox(height: 12),
                     Button(
                       color: const Color(0xFFCF7072),
-                      label: 'Agendar',
+                      label: _modoEdicao ? 'Salvar alterações' : 'Agendar',
                       loading: _salvando,
                       onPressed: _salvando
                           ? null
@@ -307,23 +351,36 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
       (total, servico) => total + servico.preco,
     );
     final total = valorDigitado > 0 ? valorDigitado : totalSugerido;
+    final observacoes = _observacoesController.text.trim();
+    final observacoesOuNull = observacoes.isEmpty ? null : observacoes;
 
     FocusScope.of(context).unfocus();
     setState(() => _salvando = true);
 
     final agendamentosServico = DependenciasWidget.agendamentosDe(context);
     try {
-      await agendamentosServico.criarAgendamento(
-        clienteId: cliente.id,
-        clienteNome: cliente.nome,
-        inicio: inicio,
-        fim: fim,
-        servicos: servicosResumo,
-        total: total,
-        observacoes: _observacoesController.text.trim().isEmpty
-            ? null
-            : _observacoesController.text.trim(),
-      );
+      if (_modoEdicao && _agendamentoOriginal != null) {
+        await agendamentosServico.atualizarAgendamento(
+          id: _agendamentoOriginal!.id,
+          clienteId: cliente.id,
+          clienteNome: cliente.nome,
+          inicio: inicio,
+          fim: fim,
+          servicos: servicosResumo,
+          total: total,
+          observacoes: observacoesOuNull,
+        );
+      } else {
+        await agendamentosServico.criarAgendamento(
+          clienteId: cliente.id,
+          clienteNome: cliente.nome,
+          inicio: inicio,
+          fim: fim,
+          servicos: servicosResumo,
+          total: total,
+          observacoes: observacoesOuNull,
+        );
+      }
       if (!mounted) {
         return;
       }
@@ -380,7 +437,7 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
 
   List<TimeOfDay> _gerarHorarios() {
     final horarios = <TimeOfDay>[];
-    for (int minuto = 6 * 60; minuto <= 22 * 60 + 45; minuto += 15) {
+    for (int minuto = 6 * 60; minuto <= 23 * 60 + 45; minuto += 15) {
       final hora = minuto ~/ 60;
       final minutos = minuto % 60;
       horarios.add(TimeOfDay(hour: hora, minute: minutos));

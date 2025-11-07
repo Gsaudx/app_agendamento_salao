@@ -348,6 +348,90 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _editarAgendamento(Agendamento agendamento) async {
+    final resultado = await Navigator.pushNamed(
+      context,
+      NewAppointmentScreen.routeName,
+      arguments: NewAppointmentScreenArguments(agendamento: agendamento),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (resultado == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Agendamento atualizado com sucesso.')),
+      );
+    }
+  }
+
+  Future<void> _cancelarAgendamento(Agendamento agendamento) async {
+    final formatadorData = DateFormat.yMMMMd('pt_BR');
+    final formatadorHora = DateFormat.Hm('pt_BR');
+    final confirmado =
+        await showDialog<bool>(
+          context: context,
+          builder: (contextoDialogo) => AlertDialog(
+            title: const Text('Cancelar agendamento'),
+            content: Text(
+              'Deseja cancelar o agendamento de ${agendamento.clienteNome} em '
+              '${formatadorData.format(agendamento.inicio)} às '
+              '${formatadorHora.format(agendamento.inicio)}? Essa ação não '
+              'pode ser desfeita.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(contextoDialogo).pop(false),
+                child: const Text('Manter'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(contextoDialogo).pop(true),
+                child: const Text('Cancelar agendamento'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmado || !mounted) {
+      return;
+    }
+
+    final navigator = Navigator.of(context, rootNavigator: true);
+    navigator.push(
+      PageRouteBuilder<void>(
+        pageBuilder: (_, __, ___) =>
+            const Center(child: CircularProgressIndicator()),
+        barrierColor: Colors.black26,
+        opaque: false,
+      ),
+    );
+
+    try {
+      await _agendamentosServico.cancelarAgendamento(agendamento.id);
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Agendamento cancelado com sucesso.')),
+      );
+    } catch (erro) {
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Não foi possível cancelar o agendamento: $erro'),
+        ),
+      );
+    }
+  }
+
   TimeOfDay _alinharParaGrade(TimeOfDay hora) {
     final totalMinutos = hora.hour * 60 + hora.minute;
     const inicio = 6 * 60;
@@ -420,13 +504,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Edição de agendamento ainda não disponível.',
-                            ),
-                          ),
-                        );
+                        _editarAgendamento(agendamento);
                       },
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Editar'),
@@ -437,13 +515,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Cancelamento de agendamento ainda não disponível.',
-                            ),
-                          ),
-                        );
+                        _cancelarAgendamento(agendamento);
                       },
                       icon: const Icon(Icons.close),
                       label: const Text('Cancelar'),

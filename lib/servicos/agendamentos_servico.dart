@@ -77,4 +77,49 @@ class AgendamentosServico {
       'criadoEm': FieldValue.serverTimestamp(),
     });
   }
+
+  Future<void> atualizarAgendamento({
+    required String id,
+    required String clienteId,
+    required String clienteNome,
+    required DateTime inicio,
+    required DateTime fim,
+    required List<AgendamentoServicoResumo> servicos,
+    required double total,
+    String? observacoes,
+  }) async {
+    final servicosMap = servicos.map((servico) => servico.toMap()).toList();
+    final duracaoMinutos = servicos.fold<int>(
+      0,
+      (totalDuracao, servico) => totalDuracao + servico.duracaoMinutos,
+    );
+    final descricaoServicos = servicos
+        .map((servico) => servico.nome)
+        .join(', ');
+
+    final dadosAtualizados = <String, dynamic>{
+      'clienteId': clienteId,
+      'clienteNome': clienteNome,
+      'inicio': Timestamp.fromDate(inicio),
+      'fim': Timestamp.fromDate(fim),
+      'duracaoMinutos': duracaoMinutos,
+      'servicos': servicosMap,
+      'total': total,
+      'preco': total,
+      'servicoNome': descricaoServicos,
+      'atualizadoEm': FieldValue.serverTimestamp(),
+    };
+
+    if (observacoes != null && observacoes.isNotEmpty) {
+      dadosAtualizados['observacoes'] = observacoes;
+    } else {
+      dadosAtualizados['observacoes'] = FieldValue.delete();
+    }
+
+    await _colecao.doc(id).update(dadosAtualizados);
+  }
+
+  Future<void> cancelarAgendamento(String id) async {
+    await _colecao.doc(id).delete();
+  }
 }
