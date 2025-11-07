@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 
@@ -15,5 +16,6 @@ Future<void> main() async {
       storageBucket: 'app-agendamento-salao.firebasestorage.app',
     ),
   );
+  await initializeDateFormatting('pt_BR');
   runApp(const SalonSchedulerApp());
 }

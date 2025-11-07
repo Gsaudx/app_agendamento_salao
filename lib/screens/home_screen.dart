@@ -120,46 +120,49 @@ class _HomeScreenState extends State<HomeScreen> {
                   onChange: _alterarVisao,
                 ),
                 const SizedBox(height: 16),
-                TableCalendar<Agendamento>(
-                  firstDay: DateTime.utc(2020, 1, 1),
-                  lastDay: DateTime.utc(2035, 12, 31),
-                  focusedDay: _focusedDay,
-                  selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                  calendarFormat: _calendarFormat,
-                  availableGestures: AvailableGestures.horizontalSwipe,
-                  eventLoader: (day) =>
-                      eventosPorDia[DateUtils.dateOnly(day)] ?? const [],
-                  onDaySelected: (selected, focused) {
-                    setState(() {
-                      _selectedDay = DateUtils.dateOnly(selected);
-                      _focusedDay = focused;
-                    });
-                  },
-                  onFormatChanged: (format) {
-                    setState(() => _calendarFormat = format);
-                  },
-                  calendarBuilders: CalendarBuilders(
-                    markerBuilder: (context, day, events) {
-                      if (events.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
-                      return _IndicadoresAgendamento(
-                        eventos: events.cast<Agendamento>(),
-                      );
+                Flexible(
+                  child: TableCalendar<Agendamento>(
+                    locale: 'pt_BR',
+                    firstDay: DateTime.utc(2020, 1, 1),
+                    lastDay: DateTime.utc(2035, 12, 31),
+                    focusedDay: _focusedDay,
+                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                    calendarFormat: _calendarFormat,
+                    availableGestures: AvailableGestures.horizontalSwipe,
+                    eventLoader: (day) =>
+                        eventosPorDia[DateUtils.dateOnly(day)] ?? const [],
+                    onDaySelected: (selected, focused) {
+                      setState(() {
+                        _selectedDay = DateUtils.dateOnly(selected);
+                        _focusedDay = focused;
+                      });
                     },
-                  ),
-                  headerStyle: HeaderStyle(
-                    formatButtonVisible: false,
-                    titleCentered: true,
-                    titleTextFormatter: (date, locale) =>
-                        DateFormat.yMMMM('pt_BR').format(date),
-                    leftChevronIcon: const Icon(Icons.chevron_left),
-                    rightChevronIcon: const Icon(Icons.chevron_right),
-                  ),
-                  daysOfWeekStyle: DaysOfWeekStyle(
-                    weekendStyle:
-                        (tema.textTheme.bodySmall ?? const TextStyle())
-                            .copyWith(color: tema.colorScheme.primary),
+                    onFormatChanged: (format) {
+                      setState(() => _calendarFormat = format);
+                    },
+                    calendarBuilders: CalendarBuilders(
+                      markerBuilder: (context, day, events) {
+                        if (events.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return _IndicadoresAgendamento(
+                          eventos: events.cast<Agendamento>(),
+                        );
+                      },
+                    ),
+                    headerStyle: HeaderStyle(
+                      formatButtonVisible: false,
+                      titleCentered: true,
+                      titleTextFormatter: (date, locale) =>
+                          DateFormat.yMMMM('pt_BR').format(date),
+                      leftChevronIcon: const Icon(Icons.chevron_left),
+                      rightChevronIcon: const Icon(Icons.chevron_right),
+                    ),
+                    daysOfWeekStyle: DaysOfWeekStyle(
+                      weekendStyle:
+                          (tema.textTheme.bodySmall ?? const TextStyle())
+                              .copyWith(color: tema.colorScheme.primary),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
