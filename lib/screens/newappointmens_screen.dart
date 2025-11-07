@@ -12,6 +12,13 @@ import '../modelos/agendamento.dart';
 import '../modelos/cliente.dart';
 import '../modelos/servico.dart';
 
+class NewAppointmentScreenArguments {
+  const NewAppointmentScreenArguments({this.dia, this.horaInicial});
+
+  final DateTime? dia;
+  final TimeOfDay? horaInicial;
+}
+
 class NewAppointmentScreen extends StatefulWidget {
   const NewAppointmentScreen({super.key});
 
@@ -37,12 +44,39 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
   int _duracaoTotalMinutos = 0;
 
   late final List<TimeOfDay> _horarios;
+  bool _argumentosAplicados = false;
 
   @override
   void initState() {
     super.initState();
     _moedaFormatador = NumberFormat.currency(locale: 'pt_BR', symbol: '');
     _horarios = _gerarHorarios();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_argumentosAplicados) {
+      return;
+    }
+    final argumentos = ModalRoute.of(context)?.settings.arguments;
+    if (argumentos is NewAppointmentScreenArguments) {
+      if (argumentos.dia != null) {
+        final dia = DateUtils.dateOnly(argumentos.dia!);
+        _dataSelecionada = dia;
+        _dataController.text =
+            '${dia.day.toString().padLeft(2, '0')}/${dia.month.toString().padLeft(2, '0')}/${dia.year}';
+      }
+      if (argumentos.horaInicial != null) {
+        final horaAjustada = _alinharParaGrade(argumentos.horaInicial!);
+        _horaInicio = horaAjustada;
+        _horaFim = _calcularFim(
+          horaAjustada,
+          _duracaoTotalMinutos > 0 ? _duracaoTotalMinutos : 60,
+        );
+      }
+    }
+    _argumentosAplicados = true;
   }
 
   @override
@@ -353,6 +387,21 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
     }
     horarios.add(const TimeOfDay(hour: 23, minute: 59));
     return horarios;
+  }
+
+  TimeOfDay _alinharParaGrade(TimeOfDay hora) {
+    final totalMinutos = hora.hour * 60 + hora.minute;
+    const inicio = 6 * 60;
+    const fim = 23 * 60 + 59;
+    final limitado = totalMinutos < inicio
+        ? inicio
+        : totalMinutos > fim
+        ? fim
+        : totalMinutos;
+    final alinhado = limitado - (limitado % 15);
+    final horas = alinhado ~/ 60;
+    final minutos = alinhado % 60;
+    return TimeOfDay(hour: horas, minute: minutos);
   }
 
   TimeOfDay _calcularFim(TimeOfDay inicio, int duracaoMinutos) {
