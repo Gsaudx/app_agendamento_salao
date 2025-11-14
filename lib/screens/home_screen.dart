@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import '../components/floating_menu.dart';
 import '../dependencias/dependencias_widget.dart';
 import '../modelos/agendamento.dart';
 import '../servicos/agendamentos_servico.dart';
@@ -91,6 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final tema = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: tema.colorScheme.surfaceVariant,
       appBar: AppBar(
         title: const Text('Agenda do Salão'),
         actions: [
@@ -279,6 +281,8 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       ),
+      bottomNavigationBar:
+          const FloatingMenu(currentRoute: HomeScreen.routeName),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _abrirNovoAgendamento,
         icon: const Icon(Icons.add),

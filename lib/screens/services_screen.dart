@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../components/Input.dart';
+import '../components/floating_menu.dart';
 import '../components/select.dart';
 import '../dependencias/dependencias_widget.dart';
 import '../formatters/moeda_input_formatter.dart';
@@ -243,6 +244,7 @@ class ServicesScreen extends StatelessWidget {
     final formatadorMoeda = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
       appBar: AppBar(
         title: const Text('Serviços'),
         backgroundColor: const Color.fromARGB(255, 252, 218, 218),
@@ -395,6 +397,8 @@ class ServicesScreen extends StatelessWidget {
           );
         },
       ),
+      bottomNavigationBar:
+          const FloatingMenu(currentRoute: ServicesScreen.routeName),
     );
   }
 
