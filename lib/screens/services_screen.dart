@@ -1,3 +1,4 @@
+import 'package:app_paula_barros/components/floating_button.dart';
 import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
@@ -251,12 +252,6 @@ class ServicesScreen extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: IconButton(
-              onPressed: () {
-                _openServiceDialog(context);
-              },
-              icon: const Icon(Icons.add),
-            ),
           ),
         ],
       ),
@@ -397,8 +392,11 @@ class ServicesScreen extends StatelessWidget {
           );
         },
       ),
-      bottomNavigationBar:
-          const FloatingMenu(currentRoute: ServicesScreen.routeName),
+      bottomNavigationBar: const FloatingMenu(currentRoute: 'teste'),
+      floatingActionButton: FloatingButton(
+        label: 'Novo Serviço',
+        onPressed: () =>  _openServiceDialog(context),
+      ),
     );
   }
 
