@@ -95,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: tema.colorScheme.surfaceVariant,
       appBar: AppBar(
         title: const Text('Agenda do Salão'),
+        backgroundColor: const Color.fromARGB(255, 252, 218, 218),
         actions: [
           IconButton(
             tooltip: 'Sair',

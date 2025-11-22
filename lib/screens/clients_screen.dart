@@ -18,7 +18,10 @@ class ClientsScreen extends StatelessWidget {
     final clientesServico = DependenciasWidget.clientesDe(context);
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-      appBar: AppBar(title: const Text('Clientes')),
+      appBar: AppBar(
+        title: const Text('Clientes'),
+        backgroundColor: const Color.fromARGB(255, 252, 218, 218),
+      ),
       body: StreamBuilder<List<Cliente>>(
         stream: clientesServico.observarClientes(),
         builder: (context, snapshot) {
@@ -92,8 +95,9 @@ class ClientsScreen extends StatelessWidget {
           );
         },
       ),
-      bottomNavigationBar:
-          const FloatingMenu(currentRoute: ClientsScreen.routeName),
+      bottomNavigationBar: const FloatingMenu(
+        currentRoute: ClientsScreen.routeName,
+      ),
       floatingActionButton: FloatingButton(
         label: 'Novo Cliente',
         onPressed: () => _abrirCadastroCliente(context),
