@@ -1,5 +1,7 @@
+import 'package:app_paula_barros/screens/history_screen.dart';
 import 'package:app_paula_barros/screens/newappointmens_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:web/web.dart';
 
 import 'dependencias/dependencias_widget.dart';
 import 'screens/appointments_screen.dart';
@@ -58,8 +60,8 @@ class SalonSchedulerApp extends StatelessWidget {
           ServicesScreen.routeName: (context) => const ServicesScreen(),
           NewClientScreen.routeName: (context) => const NewClientScreen(),
           EditClientScreen.routeName: (context) => const EditClientScreen(),
-          NewAppointmentScreen.routeName: (context) =>
-              const NewAppointmentScreen(),
+          NewAppointmentScreen.routeName: (context) => const NewAppointmentScreen(),
+          HistoryScreen.routeName: (context) => const HistoryScreen(),
         },
         debugShowCheckedModeBanner: false,
         builder: (context, child) {

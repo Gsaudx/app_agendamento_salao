@@ -9,6 +9,7 @@ class FloatingMenu extends StatelessWidget {
     _MenuItem(route: '/', icon: Icons.calendar_month_outlined, label: 'Agenda'),
     _MenuItem(route: '/clients', icon: Icons.groups_outlined, label: 'Clientes'),
     _MenuItem(route: '/services', icon: Icons.design_services_outlined, label: 'Serviços'),
+    _MenuItem(route: '/history', icon: Icons.history_outlined, label: 'Histórico'),
   ];
 
   @override
