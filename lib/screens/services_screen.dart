@@ -1,8 +1,10 @@
+import 'package:app_paula_barros/components/floating_button.dart';
 import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
 
 import '../components/Input.dart';
+import '../components/floating_menu.dart';
 import '../components/select.dart';
 import '../dependencias/dependencias_widget.dart';
 import '../formatters/moeda_input_formatter.dart';
@@ -13,6 +15,10 @@ class ServicesScreen extends StatelessWidget {
 
   static const routeName = '/services';
 
+  Future<void> _openServiceDialog(
+    BuildContext context, {
+    Servico? servico,
+  }) async {
   Future<void> _openServiceDialog(
     BuildContext context, {
     Servico? servico,
@@ -30,7 +36,20 @@ class ServicesScreen extends StatelessWidget {
     final descricaoController = TextEditingController(
       text: servico?.descricao ?? '',
     );
+    final nomeController = TextEditingController(text: servico?.nome ?? '');
+    final precoController = TextEditingController(
+      text: servico != null
+          ? NumberFormat.currency(
+              locale: 'pt_BR',
+              symbol: '',
+            ).format(servico.preco).trim()
+          : '',
+    );
+    final descricaoController = TextEditingController(
+      text: servico?.descricao ?? '',
+    );
     const duracoesDisponiveis = <int>[30, 45, 60, 90, 120];
+    int? duracaoSelecionada = servico?.duracaoMinutos;
     int? duracaoSelecionada = servico?.duracaoMinutos;
     bool salvando = false;
 
@@ -65,6 +84,9 @@ class ServicesScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
+                          servico == null
+                              ? 'Adicionar serviço'
+                              : 'Editar serviço',
                           servico == null
                               ? 'Adicionar serviço'
                               : 'Editar serviço',
@@ -172,6 +194,37 @@ class ServicesScreen extends StatelessWidget {
                                                             .trim(),
                                                 );
                                           }
+                                          if (servico == null) {
+                                            await servicosServico.criarServico(
+                                              nome: nome,
+                                              duracaoMinutos:
+                                                  duracaoSelecionada!,
+                                              preco: preco,
+                                              descricao:
+                                                  descricaoController.text
+                                                      .trim()
+                                                      .isEmpty
+                                                  ? null
+                                                  : descricaoController.text
+                                                        .trim(),
+                                            );
+                                          } else {
+                                            await servicosServico
+                                                .atualizarServico(
+                                                  servico.id,
+                                                  nome: nome,
+                                                  duracaoMinutos:
+                                                      duracaoSelecionada!,
+                                                  preco: preco,
+                                                  descricao:
+                                                      descricaoController.text
+                                                          .trim()
+                                                          .isEmpty
+                                                      ? null
+                                                      : descricaoController.text
+                                                            .trim(),
+                                                );
+                                          }
                                           if (context.mounted) {
                                             Navigator.of(
                                               dialogContext,
@@ -224,8 +277,19 @@ class ServicesScreen extends StatelessWidget {
     precoController.dispose();
     descricaoController.dispose();
 
+    nomeController.dispose();
+    precoController.dispose();
+    descricaoController.dispose();
+
     if (resultado == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            servico == null
+                ? 'Serviço cadastrado com sucesso.'
+                : 'Serviço atualizado com sucesso.',
+          ),
+        ),
         SnackBar(
           content: Text(
             servico == null
@@ -243,6 +307,7 @@ class ServicesScreen extends StatelessWidget {
     final formatadorMoeda = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
       appBar: AppBar(
         title: const Text('Serviços'),
         backgroundColor: const Color.fromARGB(255, 252, 218, 218),
@@ -357,6 +422,10 @@ class ServicesScreen extends StatelessWidget {
                                   context,
                                   servico: servico,
                                 ),
+                                onPressed: () => _openServiceDialog(
+                                  context,
+                                  servico: servico,
+                                ),
                                 style: FilledButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -394,6 +463,11 @@ class ServicesScreen extends StatelessWidget {
             },
           );
         },
+      ),
+      bottomNavigationBar: const FloatingMenu(currentRoute: 'teste'),
+      floatingActionButton: FloatingButton(
+        label: 'Novo Serviço',
+        onPressed: () =>  _openServiceDialog(context),
       ),
     );
   }

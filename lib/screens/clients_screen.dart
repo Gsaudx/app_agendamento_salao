@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../components/floating_button.dart';
+import '../components/floating_menu.dart';
 import '../dependencias/dependencias_widget.dart';
 import '../formatters/telefone_input_formatter.dart';
 import '../modelos/cliente.dart';
@@ -16,7 +17,11 @@ class ClientsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final clientesServico = DependenciasWidget.clientesDe(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Clientes')),
+      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+      appBar: AppBar(
+        title: const Text('Clientes'),
+        backgroundColor: const Color.fromARGB(255, 252, 218, 218),
+      ),
       body: StreamBuilder<List<Cliente>>(
         stream: clientesServico.observarClientes(),
         builder: (context, snapshot) {
@@ -89,6 +94,9 @@ class ClientsScreen extends StatelessWidget {
             },
           );
         },
+      ),
+      bottomNavigationBar: const FloatingMenu(
+        currentRoute: ClientsScreen.routeName,
       ),
       floatingActionButton: FloatingButton(
         label: 'Novo Cliente',
