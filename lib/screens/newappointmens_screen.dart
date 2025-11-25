@@ -367,6 +367,46 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
     setState(() => _salvando = true);
 
     final agendamentosServico = DependenciasWidget.agendamentosDe(context);
+
+    final conflito = await agendamentosServico.verificarConflito(
+      inicio: inicio,
+      fim: fim,
+      ignorarId: _modoEdicao ? _agendamentoOriginal?.id : null,
+    );
+
+    if (conflito != null) {
+      if (!mounted) return;
+      setState(() => _salvando = false);
+
+      final formatadorHora = DateFormat.Hm('pt_BR');
+      final inicioConflito = formatadorHora.format(conflito.inicio);
+      final fimConflito = formatadorHora.format(
+        conflito.fim ??
+            conflito.inicio.add(Duration(minutes: conflito.duracaoMinutos)),
+      );
+
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Conflito de Horário'),
+              content: Text(
+                'Já existe um agendamento neste horário:\n\n'
+                'Cliente: ${conflito.clienteNome}\n'
+                'Horário: $inicioConflito - $fimConflito\n'
+                'Serviços: ${conflito.descricaoServicos}',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Entendi'),
+                ),
+              ],
+            ),
+      );
+      return;
+    }
+
     try {
       if (_modoEdicao && _agendamentoOriginal != null) {
         await agendamentosServico.atualizarAgendamento(

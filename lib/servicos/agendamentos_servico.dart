@@ -45,6 +45,37 @@ class AgendamentosServico {
         );
   }
 
+  Future<Agendamento?> verificarConflito({
+    required DateTime inicio,
+    required DateTime fim,
+    String? ignorarId,
+  }) async {
+    final startOfDay = DateTime(inicio.year, inicio.month, inicio.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final snapshot = await _colecao
+        .where('inicio', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('inicio', isLessThan: Timestamp.fromDate(endOfDay))
+        .get();
+
+    final agendamentosDoDia = snapshot.docs.map(Agendamento.fromDocument);
+
+    for (final agendamento in agendamentosDoDia) {
+      if (ignorarId != null && agendamento.id == ignorarId) {
+        continue;
+      }
+
+      final agendamentoFim =
+          agendamento.fim ??
+          agendamento.inicio.add(Duration(minutes: agendamento.duracaoMinutos));
+
+      if (inicio.isBefore(agendamentoFim) && fim.isAfter(agendamento.inicio)) {
+        return agendamento;
+      }
+    }
+    return null;
+  }
+
   Future<void> criarAgendamento({
     required String clienteId,
     required String clienteNome,
