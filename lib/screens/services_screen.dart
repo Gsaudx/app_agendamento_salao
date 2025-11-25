@@ -425,7 +425,7 @@ class ServicesScreen extends StatelessWidget {
           );
         },
       ),
-      bottomNavigationBar: const FloatingMenu(currentRoute: 'teste'),
+      bottomNavigationBar: const FloatingMenu(currentRoute: ServicesScreen.routeName),
       floatingActionButton: FloatingButton(
         label: 'Novo Serviço',
         onPressed: () =>  _openServiceDialog(context),
