@@ -19,10 +19,6 @@ class ServicesScreen extends StatelessWidget {
     BuildContext context, {
     Servico? servico,
   }) async {
-  Future<void> _openServiceDialog(
-    BuildContext context, {
-    Servico? servico,
-  }) async {
     final servicosServico = DependenciasWidget.servicosDe(context);
     final nomeController = TextEditingController(text: servico?.nome ?? '');
     final precoController = TextEditingController(
@@ -36,20 +32,7 @@ class ServicesScreen extends StatelessWidget {
     final descricaoController = TextEditingController(
       text: servico?.descricao ?? '',
     );
-    final nomeController = TextEditingController(text: servico?.nome ?? '');
-    final precoController = TextEditingController(
-      text: servico != null
-          ? NumberFormat.currency(
-              locale: 'pt_BR',
-              symbol: '',
-            ).format(servico.preco).trim()
-          : '',
-    );
-    final descricaoController = TextEditingController(
-      text: servico?.descricao ?? '',
-    );
     const duracoesDisponiveis = <int>[30, 45, 60, 90, 120];
-    int? duracaoSelecionada = servico?.duracaoMinutos;
     int? duracaoSelecionada = servico?.duracaoMinutos;
     bool salvando = false;
 
@@ -84,9 +67,6 @@ class ServicesScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          servico == null
-                              ? 'Adicionar serviço'
-                              : 'Editar serviço',
                           servico == null
                               ? 'Adicionar serviço'
                               : 'Editar serviço',
@@ -273,23 +253,8 @@ class ServicesScreen extends StatelessWidget {
     precoController.dispose();
     descricaoController.dispose();
 
-    nomeController.dispose();
-    precoController.dispose();
-    descricaoController.dispose();
-
-    nomeController.dispose();
-    precoController.dispose();
-    descricaoController.dispose();
-
     if (resultado == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            servico == null
-                ? 'Serviço cadastrado com sucesso.'
-                : 'Serviço atualizado com sucesso.',
-          ),
-        ),
         SnackBar(
           content: Text(
             servico == null
@@ -418,10 +383,6 @@ class ServicesScreen extends StatelessWidget {
                           Row(
                             children: [
                               FilledButton.tonalIcon(
-                                onPressed: () => _openServiceDialog(
-                                  context,
-                                  servico: servico,
-                                ),
                                 onPressed: () => _openServiceDialog(
                                   context,
                                   servico: servico,

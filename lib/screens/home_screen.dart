@@ -7,10 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-<<<<<<< HEAD
-=======
 import '../components/floating_menu.dart';
->>>>>>> main
 import '../dependencias/dependencias_widget.dart';
 import '../modelos/agendamento.dart';
 import '../servicos/agendamentos_servico.dart';
@@ -285,11 +282,8 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       ),
-<<<<<<< HEAD
-=======
       bottomNavigationBar:
           const FloatingMenu(currentRoute: HomeScreen.routeName),
->>>>>>> main
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _abrirNovoAgendamento,
         icon: const Icon(Icons.add),
@@ -359,7 +353,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-<<<<<<< HEAD
   Future<void> _editarAgendamento(Agendamento agendamento) async {
     final resultado = await Navigator.pushNamed(
       context,
@@ -444,8 +437,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-=======
->>>>>>> main
+
   TimeOfDay _alinharParaGrade(TimeOfDay hora) {
     final totalMinutos = hora.hour * 60 + hora.minute;
     const inicio = 6 * 60;
@@ -518,17 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
-<<<<<<< HEAD
                         _editarAgendamento(agendamento);
-=======
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Edição de agendamento ainda não disponível.',
-                            ),
-                          ),
-                        );
->>>>>>> main
                       },
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Editar'),
@@ -539,17 +521,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
-<<<<<<< HEAD
                         _cancelarAgendamento(agendamento);
-=======
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Cancelamento de agendamento ainda não disponível.',
-                            ),
-                          ),
-                        );
->>>>>>> main
                       },
                       icon: const Icon(Icons.close),
                       label: const Text('Cancelar'),

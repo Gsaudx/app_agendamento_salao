@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:intl/intl.dart';
 
-import '../components/Input.dart';
 import '../components/Input.dart';
 import '../components/button.dart';
 import '../components/input_date.dart';
@@ -123,9 +121,6 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final clientesServico = DependenciasWidget.clientesDe(context);
-    final servicosServico = DependenciasWidget.servicosDe(context);
-
     final clientesServico = DependenciasWidget.clientesDe(context);
     final servicosServico = DependenciasWidget.servicosDe(context);
 
