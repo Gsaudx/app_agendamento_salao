@@ -53,6 +53,9 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
   late final List<TimeOfDay> _horarios;
   bool _argumentosAplicados = false;
 
+  Stream<List<Cliente>>? _clientesStream;
+  Stream<List<Servico>>? _servicosStream;
+
   bool get _modoEdicao => _agendamentoOriginal != null;
 
   @override
@@ -65,6 +68,15 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_clientesStream == null) {
+      final clientesServico = DependenciasWidget.clientesDe(context);
+      _clientesStream = clientesServico.observarClientes();
+    }
+    if (_servicosStream == null) {
+      final servicosServico = DependenciasWidget.servicosDe(context);
+      _servicosStream = servicosServico.observarServicos();
+    }
+
     if (_argumentosAplicados) {
       return;
     }
@@ -121,16 +133,13 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final clientesServico = DependenciasWidget.clientesDe(context);
-    final servicosServico = DependenciasWidget.servicosDe(context);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 252, 218, 218),
         title: Text(_modoEdicao ? 'Editar Agendamento' : 'Novo Agendamento'),
       ),
       body: StreamBuilder<List<Cliente>>(
-        stream: clientesServico.observarClientes(),
+        stream: _clientesStream,
         builder: (context, clientesSnapshot) {
           if (clientesSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -158,7 +167,7 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
           }
 
           return StreamBuilder<List<Servico>>(
-            stream: servicosServico.observarServicos(),
+            stream: _servicosStream,
             builder: (context, servicosSnapshot) {
               if (servicosSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -190,7 +199,7 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
                           cliente == null ? 'Selecione um cliente' : null,
                     ),
                     const SizedBox(height: 8),
-                    _MultiSelectServicos(
+                    _ExpandableServiceSelect(
                       servicos: servicos,
                       selecionados: _servicosSelecionados,
                       onChange: () =>
@@ -494,8 +503,8 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
   }
 }
 
-class _MultiSelectServicos extends StatelessWidget {
-  const _MultiSelectServicos({
+class _ExpandableServiceSelect extends StatefulWidget {
+  const _ExpandableServiceSelect({
     required this.servicos,
     required this.selecionados,
     required this.onChange,
@@ -506,38 +515,99 @@ class _MultiSelectServicos extends StatelessWidget {
   final VoidCallback onChange;
 
   @override
+  State<_ExpandableServiceSelect> createState() =>
+      _ExpandableServiceSelectState();
+}
+
+class _ExpandableServiceSelectState extends State<_ExpandableServiceSelect> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
-    return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Serviços',
-        hintText: 'Selecione um ou mais serviços',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+    final selecionadosList = widget.servicos
+        .where((s) => widget.selecionados.contains(s.id))
+        .toList();
+
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Serviços',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
-      ),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: servicos
-            .map(
-              (servico) => FilterChip(
-                label: Text(servico.nome),
-                selected: selecionados.contains(servico.id),
-                onSelected: (_) {
-                  if (selecionados.contains(servico.id)) {
-                    selecionados.remove(servico.id);
-                  } else {
-                    selecionados.add(servico.id);
-                  }
-                  onChange();
-                },
-                selectedColor: tema.colorScheme.primaryContainer,
-                checkmarkColor: tema.colorScheme.onPrimaryContainer,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+          Row(
+            children: [
+              Expanded(
+                child: selecionadosList.isEmpty
+                    ? Text(
+                        'Selecione os serviços',
+                        style: tema.textTheme.bodyLarge?.copyWith(
+                          color: tema.hintColor,
+                        ),
+                      )
+                    : Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: selecionadosList
+                            .map(
+                              (s) => Chip(
+                                label: Text(s.nome),
+                                onDeleted: () {
+                                  widget.selecionados.remove(s.id);
+                                  widget.onChange();
+                                },
+                              ),
+                            )
+                            .toList(),
+                      ),
               ),
-            )
-            .toList(),
+              IconButton(
+                onPressed: () => setState(() => _expanded = !_expanded),
+                icon: Icon(_expanded ? Icons.remove : Icons.add),
+                tooltip: _expanded ? 'Recolher' : 'Adicionar serviços',
+              ),
+            ],
+          ),
+          if (_expanded) ...[
+            const Divider(),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: widget.servicos.length,
+                itemBuilder: (context, index) {
+                  final servico = widget.servicos[index];
+                  final isSelected = widget.selecionados.contains(servico.id);
+                  return CheckboxListTile(
+                    title: Text(servico.nome),
+                    subtitle: Text(
+                      NumberFormat.simpleCurrency(locale: 'pt_BR')
+                          .format(servico.preco),
+                    ),
+                    value: isSelected,
+                    onChanged: (checked) {
+                      if (checked == true) {
+                        widget.selecionados.add(servico.id);
+                      } else {
+                        widget.selecionados.remove(servico.id);
+                      }
+                      widget.onChange();
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
       ),
+    ),
     );
   }
 }
