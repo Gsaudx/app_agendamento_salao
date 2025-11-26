@@ -1,14 +1,31 @@
 import 'package:flutter/material.dart';
 
+import '../dependencias/dependencias_widget.dart';
+import '../screens/login_screen.dart';
+
 class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
   const AppBarPadrao({
     super.key,
-    this.onLogout,
     this.leading,
+    this.mostrarLogout = true,
   });
 
-  final VoidCallback? onLogout;
   final Widget? leading;
+  final bool mostrarLogout;
+
+  Future<void> _sair(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final mensageiro = ScaffoldMessenger.of(context);
+    try {
+      final autenticacao = DependenciasWidget.autenticacaoDe(context);
+      await autenticacao.sair();
+      navigator.pushNamedAndRemoveUntil(LoginScreen.routeName, (_) => false);
+    } catch (erro) {
+      mensageiro.showSnackBar(
+        SnackBar(content: Text('Não foi possível sair: $erro')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,11 +39,11 @@ class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
         'assets/img/logo_paula_barros.png',
         height: 50,
       ),
-      actions: onLogout != null
+      actions: mostrarLogout
           ? [
               IconButton(
                 tooltip: 'Sair',
-                onPressed: onLogout,
+                onPressed: () => _sair(context),
                 icon: const Icon(Icons.logout, color: Colors.black54),
               ),
             ]

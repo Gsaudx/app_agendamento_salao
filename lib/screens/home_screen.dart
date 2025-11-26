@@ -11,8 +11,6 @@ import '../components/floating_menu.dart';
 import '../dependencias/dependencias_widget.dart';
 import '../modelos/agendamento.dart';
 import '../servicos/agendamentos_servico.dart';
-import '../servicos/autenticacao_servico.dart';
-import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,7 +22,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final AutenticacaoServico _autenticacao;
   late final AgendamentosServico _agendamentosServico;
   final String _termoBusca = '';
   CalendarFormat _calendarFormat = CalendarFormat.month;
@@ -37,7 +34,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _autenticacao = DependenciasWidget.autenticacaoDe(context);
     _agendamentosServico = DependenciasWidget.agendamentosDe(context);
   }
 
@@ -62,7 +58,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBarPadrao(
-        onLogout: () => _sair(context),
         leading: _diaExpandido
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -593,19 +588,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
-  }
-
-  Future<void> _sair(BuildContext context) async {
-    final navigator = Navigator.of(context);
-    final mensageiro = ScaffoldMessenger.of(context);
-    try {
-      await _autenticacao.sair();
-      navigator.pushNamedAndRemoveUntil(LoginScreen.routeName, (_) => false);
-    } catch (erro) {
-      mensageiro.showSnackBar(
-        SnackBar(content: Text('Não foi possível sair: $erro')),
-      );
-    }
   }
 }
 
