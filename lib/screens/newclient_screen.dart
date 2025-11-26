@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../components/button.dart';
+import '../components/foto_cliente_selector.dart';
 import '../components/Input.dart';
 import '../components/input_date.dart';
 import '../components/input_textarea.dart';
@@ -22,6 +23,7 @@ class _NewClientScreenState extends State<NewClientScreen> {
   final _nascimentoController = TextEditingController();
   final _emailController = TextEditingController();
   final _anotacoesController = TextEditingController();
+  FotoSelecionada? _fotoSelecionada;
   bool _salvando = false;
 
   @override
@@ -49,31 +51,19 @@ class _NewClientScreenState extends State<NewClientScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            // TODO: abrir seletor de imagem
-                          },
-                          child: CircleAvatar(
-                            radius: 120, // maior tamanho
-                            backgroundColor: Colors.grey[300],
-                            child: const Icon(
-                              Icons.person,
-                              size: 200, // ajusta o ícone ao novo raio
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        TextButton(
-                          onPressed: () {
-                            // TODO: abrir seletor de imagem
-                          },
-                          child: const Text('Adicionar foto'),
-                        ),
-                      ],
+                    FotoClienteSelector(
+                      fotoSelecionada: _fotoSelecionada,
+                      carregando: _salvando,
+                      onFotoSelecionada: (foto) {
+                        setState(() {
+                          _fotoSelecionada = foto;
+                        });
+                      },
+                      onRemoverFoto: () {
+                        setState(() {
+                          _fotoSelecionada = null;
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -153,9 +143,13 @@ class _NewClientScreenState extends State<NewClientScreen> {
     setState(() {
       _salvando = true;
     });
+
     final clientesServico = DependenciasWidget.clientesDe(context);
+    final storageServico = DependenciasWidget.storageDe(context);
+
     try {
-      await clientesServico.criarCliente(
+      // Primeiro cria o cliente para obter o ID
+      final clienteId = await clientesServico.criarCliente(
         nome: nome,
         telefone: telefone,
         email: _emailController.text.trim().isEmpty
@@ -166,6 +160,18 @@ class _NewClientScreenState extends State<NewClientScreen> {
             ? null
             : _anotacoesController.text.trim(),
       );
+
+      // Se tiver foto selecionada, faz o upload
+      if (_fotoSelecionada != null) {
+        final fotoUrl = await storageServico.uploadFotoCliente(
+          clienteId: clienteId,
+          bytes: _fotoSelecionada!.bytes,
+          extensao: _fotoSelecionada!.extensao,
+        );
+        // Atualiza o cliente com a URL da foto
+        await clientesServico.atualizarFotoCliente(clienteId, fotoUrl);
+      }
+
       if (!mounted) {
         return;
       }

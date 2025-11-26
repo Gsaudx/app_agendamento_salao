@@ -8,6 +8,7 @@ class Cliente {
     this.email,
     this.observacoes,
     this.dataNascimento,
+    this.fotoUrl,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class Cliente {
   final String? email;
   final String? observacoes;
   final DateTime? dataNascimento;
+  final String? fotoUrl;
 
   factory Cliente.fromDocument(
     DocumentSnapshot<Map<String, dynamic>> documento,
@@ -38,6 +40,7 @@ class Cliente {
       email: (dados['email'] as String?)?.trim(),
       observacoes: (dados['observacoes'] as String?)?.trim(),
       dataNascimento: dataNascimento,
+      fotoUrl: (dados['fotoUrl'] as String?)?.trim(),
     );
   }
 
@@ -49,6 +52,7 @@ class Cliente {
       if (observacoes != null) 'observacoes': observacoes,
       if (dataNascimento != null)
         'dataNascimento': Timestamp.fromDate(dataNascimento!),
+      if (fotoUrl != null) 'fotoUrl': fotoUrl,
     };
   }
 

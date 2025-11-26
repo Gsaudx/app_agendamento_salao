@@ -13,10 +13,15 @@ import '../modelos/cliente.dart';
 import '../modelos/servico.dart';
 
 class NewAppointmentScreenArguments {
-  const NewAppointmentScreenArguments({this.dia, this.horaInicial});
+  const NewAppointmentScreenArguments({
+    this.dia,
+    this.horaInicial,
+    this.agendamento,
+  });
 
   final DateTime? dia;
   final TimeOfDay? horaInicial;
+  final Agendamento? agendamento;
 }
 
 class NewAppointmentScreen extends StatefulWidget {
@@ -42,9 +47,16 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
   TimeOfDay? _horaFim;
   bool _salvando = false;
   int _duracaoTotalMinutos = 0;
+  Agendamento? _agendamentoOriginal;
+  bool _clientePrefillAplicado = false;
 
   late final List<TimeOfDay> _horarios;
   bool _argumentosAplicados = false;
+
+  Stream<List<Cliente>>? _clientesStream;
+  Stream<List<Servico>>? _servicosStream;
+
+  bool get _modoEdicao => _agendamentoOriginal != null;
 
   @override
   void initState() {
@@ -56,24 +68,56 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_clientesStream == null) {
+      final clientesServico = DependenciasWidget.clientesDe(context);
+      _clientesStream = clientesServico.observarClientes();
+    }
+    if (_servicosStream == null) {
+      final servicosServico = DependenciasWidget.servicosDe(context);
+      _servicosStream = servicosServico.observarServicos();
+    }
+
     if (_argumentosAplicados) {
       return;
     }
     final argumentos = ModalRoute.of(context)?.settings.arguments;
     if (argumentos is NewAppointmentScreenArguments) {
-      if (argumentos.dia != null) {
-        final dia = DateUtils.dateOnly(argumentos.dia!);
+      if (argumentos.agendamento != null) {
+        _agendamentoOriginal = argumentos.agendamento;
+        final agendamento = argumentos.agendamento!;
+        final dia = DateUtils.dateOnly(agendamento.inicio);
         _dataSelecionada = dia;
-        _dataController.text =
-            '${dia.day.toString().padLeft(2, '0')}/${dia.month.toString().padLeft(2, '0')}/${dia.year}';
-      }
-      if (argumentos.horaInicial != null) {
-        final horaAjustada = _alinharParaGrade(argumentos.horaInicial!);
-        _horaInicio = horaAjustada;
-        _horaFim = _calcularFim(
-          horaAjustada,
-          _duracaoTotalMinutos > 0 ? _duracaoTotalMinutos : 60,
-        );
+        _dataController.text = DateFormat('dd/MM/yyyy').format(dia);
+        _horaInicio = TimeOfDay.fromDateTime(agendamento.inicio);
+        final fimCalculado =
+            agendamento.fim ??
+            agendamento.inicio.add(
+              Duration(minutes: agendamento.duracaoMinutos),
+            );
+        _horaFim = TimeOfDay.fromDateTime(fimCalculado);
+        _duracaoTotalMinutos = agendamento.duracaoMinutos;
+        _valorController.text = _moedaFormatador
+            .format(agendamento.total)
+            .trim();
+        _observacoesController.text = agendamento.observacoes ?? '';
+        _servicosSelecionados
+          ..clear()
+          ..addAll(agendamento.servicos.map((servico) => servico.id));
+      } else {
+        if (argumentos.dia != null) {
+          final dia = DateUtils.dateOnly(argumentos.dia!);
+          _dataSelecionada = dia;
+          _dataController.text =
+              '${dia.day.toString().padLeft(2, '0')}/${dia.month.toString().padLeft(2, '0')}/${dia.year}';
+        }
+        if (argumentos.horaInicial != null) {
+          final horaAjustada = _alinharParaGrade(argumentos.horaInicial!);
+          _horaInicio = horaAjustada;
+          _horaFim = _calcularFim(
+            horaAjustada,
+            _duracaoTotalMinutos > 0 ? _duracaoTotalMinutos : 60,
+          );
+        }
       }
     }
     _argumentosAplicados = true;
@@ -89,16 +133,13 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final clientesServico = DependenciasWidget.clientesDe(context);
-    final servicosServico = DependenciasWidget.servicosDe(context);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 252, 218, 218),
-        title: const Text('Novo Agendamento'),
+        title: Text(_modoEdicao ? 'Editar Agendamento' : 'Novo Agendamento'),
       ),
       body: StreamBuilder<List<Cliente>>(
-        stream: clientesServico.observarClientes(),
+        stream: _clientesStream,
         builder: (context, clientesSnapshot) {
           if (clientesSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -113,8 +154,20 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
             );
           }
 
+          if (_modoEdicao && !_clientePrefillAplicado) {
+            try {
+              final clienteEncontrado = clientes.firstWhere(
+                (cliente) => cliente.id == _agendamentoOriginal?.clienteId,
+              );
+              _clienteSelecionado = clienteEncontrado;
+            } catch (_) {
+              _clienteSelecionado = null;
+            }
+            _clientePrefillAplicado = true;
+          }
+
           return StreamBuilder<List<Servico>>(
-            stream: servicosServico.observarServicos(),
+            stream: _servicosStream,
             builder: (context, servicosSnapshot) {
               if (servicosSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -146,7 +199,7 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
                           cliente == null ? 'Selecione um cliente' : null,
                     ),
                     const SizedBox(height: 8),
-                    _MultiSelectServicos(
+                    _ExpandableServiceSelect(
                       servicos: servicos,
                       selecionados: _servicosSelecionados,
                       onChange: () =>
@@ -246,7 +299,7 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
                     const SizedBox(height: 12),
                     Button(
                       color: const Color(0xFFCF7072),
-                      label: 'Agendar',
+                      label: _modoEdicao ? 'Salvar alterações' : 'Agendar',
                       loading: _salvando,
                       onPressed: _salvando
                           ? null
@@ -307,23 +360,76 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
       (total, servico) => total + servico.preco,
     );
     final total = valorDigitado > 0 ? valorDigitado : totalSugerido;
+    final observacoes = _observacoesController.text.trim();
+    final observacoesOuNull = observacoes.isEmpty ? null : observacoes;
 
     FocusScope.of(context).unfocus();
     setState(() => _salvando = true);
 
     final agendamentosServico = DependenciasWidget.agendamentosDe(context);
-    try {
-      await agendamentosServico.criarAgendamento(
-        clienteId: cliente.id,
-        clienteNome: cliente.nome,
-        inicio: inicio,
-        fim: fim,
-        servicos: servicosResumo,
-        total: total,
-        observacoes: _observacoesController.text.trim().isEmpty
-            ? null
-            : _observacoesController.text.trim(),
+
+    final conflito = await agendamentosServico.verificarConflito(
+      inicio: inicio,
+      fim: fim,
+      ignorarId: _modoEdicao ? _agendamentoOriginal?.id : null,
+    );
+
+    if (conflito != null) {
+      if (!mounted) return;
+      setState(() => _salvando = false);
+
+      final formatadorHora = DateFormat.Hm('pt_BR');
+      final inicioConflito = formatadorHora.format(conflito.inicio);
+      final fimConflito = formatadorHora.format(
+        conflito.fim ??
+            conflito.inicio.add(Duration(minutes: conflito.duracaoMinutos)),
       );
+
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Conflito de Horário'),
+              content: Text(
+                'Já existe um agendamento neste horário:\n\n'
+                'Cliente: ${conflito.clienteNome}\n'
+                'Horário: $inicioConflito - $fimConflito\n'
+                'Serviços: ${conflito.descricaoServicos}',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Entendi'),
+                ),
+              ],
+            ),
+      );
+      return;
+    }
+
+    try {
+      if (_modoEdicao && _agendamentoOriginal != null) {
+        await agendamentosServico.atualizarAgendamento(
+          id: _agendamentoOriginal!.id,
+          clienteId: cliente.id,
+          clienteNome: cliente.nome,
+          inicio: inicio,
+          fim: fim,
+          servicos: servicosResumo,
+          total: total,
+          observacoes: observacoesOuNull,
+        );
+      } else {
+        await agendamentosServico.criarAgendamento(
+          clienteId: cliente.id,
+          clienteNome: cliente.nome,
+          inicio: inicio,
+          fim: fim,
+          servicos: servicosResumo,
+          total: total,
+          observacoes: observacoesOuNull,
+        );
+      }
       if (!mounted) {
         return;
       }
@@ -380,7 +486,7 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
 
   List<TimeOfDay> _gerarHorarios() {
     final horarios = <TimeOfDay>[];
-    for (int minuto = 6 * 60; minuto <= 22 * 60 + 45; minuto += 15) {
+    for (int minuto = 6 * 60; minuto <= 23 * 60 + 45; minuto += 15) {
       final hora = minuto ~/ 60;
       final minutos = minuto % 60;
       horarios.add(TimeOfDay(hour: hora, minute: minutos));
@@ -437,8 +543,8 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
   }
 }
 
-class _MultiSelectServicos extends StatelessWidget {
-  const _MultiSelectServicos({
+class _ExpandableServiceSelect extends StatefulWidget {
+  const _ExpandableServiceSelect({
     required this.servicos,
     required this.selecionados,
     required this.onChange,
@@ -449,38 +555,99 @@ class _MultiSelectServicos extends StatelessWidget {
   final VoidCallback onChange;
 
   @override
+  State<_ExpandableServiceSelect> createState() =>
+      _ExpandableServiceSelectState();
+}
+
+class _ExpandableServiceSelectState extends State<_ExpandableServiceSelect> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
-    return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Serviços',
-        hintText: 'Selecione um ou mais serviços',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+    final selecionadosList = widget.servicos
+        .where((s) => widget.selecionados.contains(s.id))
+        .toList();
+
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Serviços',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
-      ),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: servicos
-            .map(
-              (servico) => FilterChip(
-                label: Text(servico.nome),
-                selected: selecionados.contains(servico.id),
-                onSelected: (_) {
-                  if (selecionados.contains(servico.id)) {
-                    selecionados.remove(servico.id);
-                  } else {
-                    selecionados.add(servico.id);
-                  }
-                  onChange();
-                },
-                selectedColor: tema.colorScheme.primaryContainer,
-                checkmarkColor: tema.colorScheme.onPrimaryContainer,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+          Row(
+            children: [
+              Expanded(
+                child: selecionadosList.isEmpty
+                    ? Text(
+                        'Selecione os serviços',
+                        style: tema.textTheme.bodyLarge?.copyWith(
+                          color: tema.hintColor,
+                        ),
+                      )
+                    : Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: selecionadosList
+                            .map(
+                              (s) => Chip(
+                                label: Text(s.nome),
+                                onDeleted: () {
+                                  widget.selecionados.remove(s.id);
+                                  widget.onChange();
+                                },
+                              ),
+                            )
+                            .toList(),
+                      ),
               ),
-            )
-            .toList(),
+              IconButton(
+                onPressed: () => setState(() => _expanded = !_expanded),
+                icon: Icon(_expanded ? Icons.remove : Icons.add),
+                tooltip: _expanded ? 'Recolher' : 'Adicionar serviços',
+              ),
+            ],
+          ),
+          if (_expanded) ...[
+            const Divider(),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: widget.servicos.length,
+                itemBuilder: (context, index) {
+                  final servico = widget.servicos[index];
+                  final isSelected = widget.selecionados.contains(servico.id);
+                  return CheckboxListTile(
+                    title: Text(servico.nome),
+                    subtitle: Text(
+                      NumberFormat.simpleCurrency(locale: 'pt_BR')
+                          .format(servico.preco),
+                    ),
+                    value: isSelected,
+                    onChanged: (checked) {
+                      if (checked == true) {
+                        widget.selecionados.add(servico.id);
+                      } else {
+                        widget.selecionados.remove(servico.id);
+                      }
+                      widget.onChange();
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
       ),
+    ),
     );
   }
 }

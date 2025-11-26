@@ -14,6 +14,7 @@ class Select<T> extends StatelessWidget {
   final FormFieldValidator<T?>? validator;
   final String Function(T item)? itemLabel;
   final EdgeInsetsGeometry? contentPadding;
+  final EdgeInsetsGeometry? margin;
 
   const Select({
     super.key,
@@ -28,19 +29,21 @@ class Select<T> extends StatelessWidget {
     this.validator,
     this.itemLabel,
     this.contentPadding,
+    this.margin,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(8.0),
+      margin: margin ?? const EdgeInsets.all(8.0),
       child: DropdownButtonFormField<T>(
+        key: value == null ? null : ValueKey<T?>(value),
         initialValue: value,
         items: items
             .map(
-              (e) => DropdownMenuItem<T>(
-                value: e,
-                child: Text(itemLabel?.call(e) ?? e.toString()),
+              (item) => DropdownMenuItem<T>(
+                value: item,
+                child: Text(itemLabel?.call(item) ?? item.toString()),
               ),
             )
             .toList(),

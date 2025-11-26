@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../components/button.dart';
+import '../components/foto_cliente_selector.dart';
 import '../components/Input.dart';
 import '../components/input_date.dart';
 import '../components/input_textarea.dart';
@@ -24,6 +25,9 @@ class _EditClientScreenState extends State<EditClientScreen> {
   late final TextEditingController _emailController;
   late final TextEditingController _anotacoesController;
   Cliente? _cliente;
+  FotoSelecionada? _fotoSelecionada;
+  String? _fotoUrlAtual;
+  bool _removerFotoAtual = false;
   bool _salvando = false;
 
   @override
@@ -48,6 +52,7 @@ class _EditClientScreenState extends State<EditClientScreen> {
       );
       _emailController.text = argumentos.email ?? '';
       _anotacoesController.text = argumentos.observacoes ?? '';
+      _fotoUrlAtual = argumentos.fotoUrl;
       if (argumentos.dataNascimento != null) {
         final data = argumentos.dataNascimento!;
         _nascimentoController.text =
@@ -92,31 +97,22 @@ class _EditClientScreenState extends State<EditClientScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            // TODO: abrir seletor de imagem
-                          },
-                          child: CircleAvatar(
-                            radius: 120, // maior tamanho
-                            backgroundColor: Colors.grey[300],
-                            child: const Icon(
-                              Icons.person,
-                              size: 200, // ajusta o ícone ao novo raio
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        TextButton(
-                          onPressed: () {
-                            // TODO: abrir seletor de imagem
-                          },
-                          child: const Text('Adicionar foto'),
-                        ),
-                      ],
+                    FotoClienteSelector(
+                      fotoUrl: _removerFotoAtual ? null : _fotoUrlAtual,
+                      fotoSelecionada: _fotoSelecionada,
+                      carregando: _salvando,
+                      onFotoSelecionada: (foto) {
+                        setState(() {
+                          _fotoSelecionada = foto;
+                          _removerFotoAtual = false;
+                        });
+                      },
+                      onRemoverFoto: () {
+                        setState(() {
+                          _fotoSelecionada = null;
+                          _removerFotoAtual = true;
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -200,8 +196,26 @@ class _EditClientScreenState extends State<EditClientScreen> {
     setState(() {
       _salvando = true;
     });
+
     final clientesServico = DependenciasWidget.clientesDe(context);
+    final storageServico = DependenciasWidget.storageDe(context);
+
     try {
+      String? novaFotoUrl = _fotoUrlAtual;
+
+      // Se tiver nova foto selecionada, faz upload
+      if (_fotoSelecionada != null) {
+        novaFotoUrl = await storageServico.uploadFotoCliente(
+          clienteId: cliente.id,
+          bytes: _fotoSelecionada!.bytes,
+          extensao: _fotoSelecionada!.extensao,
+        );
+      } else if (_removerFotoAtual) {
+        // Se pediu para remover, deleta a foto antiga
+        await storageServico.deletarFotoCliente(cliente.id);
+        novaFotoUrl = null;
+      }
+
       await clientesServico.atualizarCliente(
         cliente.id,
         nome: nome,
@@ -209,7 +223,14 @@ class _EditClientScreenState extends State<EditClientScreen> {
         email: _emailController.text.trim(),
         dataNascimento: _parseNascimento(),
         observacoes: _anotacoesController.text.trim(),
+        fotoUrl: novaFotoUrl,
       );
+
+      // Atualiza a foto separadamente se necessário
+      if (_removerFotoAtual || _fotoSelecionada != null) {
+        await clientesServico.atualizarFotoCliente(cliente.id, novaFotoUrl);
+      }
+
       if (!mounted) {
         return;
       }

@@ -18,14 +18,15 @@ class ClientesServico {
         .map((snapshot) => snapshot.docs.map(Cliente.fromDocument).toList());
   }
 
-  Future<void> criarCliente({
+  Future<String> criarCliente({
     required String nome,
     required String telefone,
     String? email,
     DateTime? dataNascimento,
     String? observacoes,
+    String? fotoUrl,
   }) async {
-    await _colecao.add({
+    final docRef = await _colecao.add({
       'nome': nome,
       'telefone': telefone,
       if (email != null && email.isNotEmpty) 'email': email,
@@ -33,8 +34,10 @@ class ClientesServico {
         'observacoes': observacoes,
       if (dataNascimento != null)
         'dataNascimento': Timestamp.fromDate(dataNascimento),
+      if (fotoUrl != null && fotoUrl.isNotEmpty) 'fotoUrl': fotoUrl,
       'criadoEm': FieldValue.serverTimestamp(),
     });
+    return docRef.id;
   }
 
   Future<void> atualizarCliente(
@@ -44,6 +47,7 @@ class ClientesServico {
     String? email,
     DateTime? dataNascimento,
     String? observacoes,
+    String? fotoUrl,
   }) async {
     final dados = <String, dynamic>{
       'nome': nome,
@@ -58,6 +62,17 @@ class ClientesServico {
     } else {
       dados['dataNascimento'] = FieldValue.delete();
     }
+    if (fotoUrl != null && fotoUrl.isNotEmpty) {
+      dados['fotoUrl'] = fotoUrl;
+    }
     await _colecao.doc(id).update(dados);
+  }
+
+  Future<void> atualizarFotoCliente(String id, String? fotoUrl) async {
+    if (fotoUrl != null && fotoUrl.isNotEmpty) {
+      await _colecao.doc(id).update({'fotoUrl': fotoUrl});
+    } else {
+      await _colecao.doc(id).update({'fotoUrl': FieldValue.delete()});
+    }
   }
 }

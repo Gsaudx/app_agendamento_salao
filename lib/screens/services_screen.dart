@@ -3,238 +3,144 @@ import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
 
-import '../components/Input.dart';
+import '../components/app_bar_padrao.dart';
 import '../components/floating_menu.dart';
-import '../components/select.dart';
-import '../dependencias/dependencias_widget.dart';
-import '../formatters/moeda_input_formatter.dart';
 import '../modelos/servico.dart';
+import '../dependencias/dependencias_widget.dart';
+import 'editservice_screen.dart';
+import 'newservice_screen.dart';
 
-class ServicesScreen extends StatelessWidget {
+class ServicesScreen extends StatefulWidget {
   const ServicesScreen({super.key});
 
   static const routeName = '/services';
 
-  Future<void> _openServiceDialog(
-    BuildContext context, {
-    Servico? servico,
-  }) async {
-    final servicosServico = DependenciasWidget.servicosDe(context);
-    final nomeController = TextEditingController(text: servico?.nome ?? '');
-    final precoController = TextEditingController(
-      text: servico != null
-          ? NumberFormat.currency(
-              locale: 'pt_BR',
-              symbol: '',
-            ).format(servico.preco).trim()
-          : '',
+  @override
+  State<ServicesScreen> createState() => _ServicesScreenState();
+}
+
+class _ServicesScreenState extends State<ServicesScreen> {
+  final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
+  final Map<String, GlobalKey> _chavesDasSecoes = {};
+  final _letraAtualNotifier = ValueNotifier<String>('');
+
+  static const _alfabeto = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+  ];
+
+  static const _iconesSalao = <IconData>[
+    Icons.content_cut,
+    Icons.dry_cleaning,
+    Icons.face_retouching_natural,
+    Icons.brush,
+    Icons.spa,
+    Icons.auto_fix_high,
+    Icons.palette,
+    Icons.wash,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_atualizarLetraAtual);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.removeListener(_atualizarLetraAtual);
+    _scrollController.dispose();
+    _letraAtualNotifier.dispose();
+    super.dispose();
+  }
+
+  void _atualizarLetraAtual() {
+    if (!_scrollController.hasClients) return;
+
+    String novaLetra = '';
+    for (final entrada in _chavesDasSecoes.entries) {
+      final chave = entrada.value;
+      final contexto = chave.currentContext;
+      if (contexto != null) {
+        final caixa = contexto.findRenderObject() as RenderBox?;
+        if (caixa != null && caixa.hasSize) {
+          final posicao = caixa.localToGlobal(Offset.zero);
+          if (posicao.dy <= 150) {
+            novaLetra = entrada.key;
+          }
+        }
+      }
+    }
+    if (novaLetra.isNotEmpty && novaLetra != _letraAtualNotifier.value) {
+      _letraAtualNotifier.value = novaLetra;
+    }
+  }
+
+  void _rolarParaLetra(String letra) {
+    final chave = _chavesDasSecoes[letra];
+    if (chave?.currentContext != null) {
+      Scrollable.ensureVisible(
+        chave!.currentContext!,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  Map<String, List<Servico>> _agruparPorLetra(List<Servico> servicos) {
+    final agrupado = <String, List<Servico>>{};
+    for (final servico in servicos) {
+      final letra = servico.nome.isNotEmpty
+          ? servico.nome[0].toUpperCase()
+          : '#';
+      agrupado.putIfAbsent(letra, () => []).add(servico);
+    }
+    final chaves = agrupado.keys.toList()..sort();
+    return {for (final k in chaves) k: agrupado[k]!};
+  }
+
+  void _atualizarChavesDasSecoes(Iterable<String> letras) {
+    final letrasAtuais = letras.toSet();
+    _chavesDasSecoes.removeWhere((letra, _) => !letrasAtuais.contains(letra));
+    for (final letra in letras) {
+      _chavesDasSecoes.putIfAbsent(letra, () => GlobalKey());
+    }
+  }
+
+  List<Servico> _filtrarServicos(List<Servico> servicos, String filtro) {
+    if (filtro.isEmpty) return servicos;
+    final termo = filtro.toLowerCase();
+    return servicos.where((s) => s.nome.toLowerCase().contains(termo)).toList();
+  }
+
+  IconData _obterIconeParaServico(Servico servico) {
+    final hash = servico.id.hashCode.abs();
+    return _iconesSalao[hash % _iconesSalao.length];
+  }
+
+  Future<void> _abrirCadastroServico(BuildContext context) async {
+    final resultado = await Navigator.pushNamed(
+      context,
+      NewServiceScreen.routeName,
     );
-    final descricaoController = TextEditingController(
-      text: servico?.descricao ?? '',
-    );
-    const duracoesDisponiveis = <int>[30, 45, 60, 90, 120];
-    int? duracaoSelecionada = servico?.duracaoMinutos;
-    bool salvando = false;
-
-    final resultado = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(16),
-                  bottom: Radius.circular(16),
-                ),
-              ),
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 40,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 16,
-                    bottom: MediaQuery.of(dialogContext).viewInsets.bottom + 16,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          servico == null
-                              ? 'Adicionar serviço'
-                              : 'Editar serviço',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        Input(
-                          label: 'Nome',
-                          controller: nomeController,
-                          placeholder: 'Digite o nome do serviço',
-                        ),
-                        Select<int>(
-                          label: 'Duração',
-                          placeholder: 'Selecione a duração',
-                          items: duracoesDisponiveis,
-                          value: duracaoSelecionada,
-                          onChanged: (valor) =>
-                              setState(() => duracaoSelecionada = valor),
-                          itemLabel: (valor) => _formatarDuracao(valor),
-                        ),
-                        Input(
-                          label: 'Preço',
-                          controller: precoController,
-                          placeholder: '0,00',
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          inputFormatters: [MoedaInputFormatter()],
-                          prefixText: 'R\$ ',
-                        ),
-                        Input(
-                          label: 'Descrição (opcional)',
-                          controller: descricaoController,
-                          placeholder: 'Resumo rápido do serviço',
-                          maxLines: 3,
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: salvando
-                                    ? null
-                                    : () => Navigator.of(
-                                        dialogContext,
-                                      ).pop(false),
-                                child: const Text('Cancelar'),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: FilledButton(
-                                onPressed: salvando
-                                    ? null
-                                    : () async {
-                                        final nome = nomeController.text.trim();
-                                        final preco =
-                                            MoedaInputFormatter.toDouble(
-                                              precoController.text,
-                                            ) ??
-                                            -1;
-                                        if (nome.isEmpty ||
-                                            duracaoSelecionada == null ||
-                                            preco < 0) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Informe nome, duração e um preço válido.',
-                                              ),
-                                            ),
-                                          );
-                                          return;
-                                        }
-                                        setState(() => salvando = true);
-                                        try {
-                                          if (servico == null) {
-                                            await servicosServico.criarServico(
-                                              nome: nome,
-                                              duracaoMinutos:
-                                                  duracaoSelecionada!,
-                                              preco: preco,
-                                              descricao:
-                                                  descricaoController.text
-                                                      .trim()
-                                                      .isEmpty
-                                                  ? null
-                                                  : descricaoController.text
-                                                        .trim(),
-                                            );
-                                          } else {
-                                            await servicosServico
-                                                .atualizarServico(
-                                                  servico.id,
-                                                  nome: nome,
-                                                  duracaoMinutos:
-                                                      duracaoSelecionada!,
-                                                  preco: preco,
-                                                  descricao:
-                                                      descricaoController.text
-                                                          .trim()
-                                                          .isEmpty
-                                                      ? null
-                                                      : descricaoController.text
-                                                            .trim(),
-                                                );
-                                          }
-                                          if (context.mounted) {
-                                            Navigator.of(
-                                              dialogContext,
-                                            ).pop(true);
-                                          }
-                                        } catch (erro) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Não foi possível salvar: $erro',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                          setState(() => salvando = false);
-                                        }
-                                      },
-                                child: salvando
-                                    ? const SizedBox(
-                                        height: 18,
-                                        width: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text('Salvar'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-
-    nomeController.dispose();
-    precoController.dispose();
-    descricaoController.dispose();
-
-    nomeController.dispose();
-    precoController.dispose();
-    descricaoController.dispose();
-
     if (resultado == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            servico == null
-                ? 'Serviço cadastrado com sucesso.'
-                : 'Serviço atualizado com sucesso.',
-          ),
-        ),
+        const SnackBar(content: Text('Serviço cadastrado com sucesso.')),
+      );
+    }
+  }
+
+  Future<void> _editarServico(BuildContext context, Servico servico) async {
+    final resultado = await Navigator.pushNamed(
+      context,
+      EditServiceScreen.routeName,
+      arguments: servico,
+    );
+    if (resultado == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Serviço atualizado com sucesso.')),
       );
     }
   }
@@ -242,19 +148,9 @@ class ServicesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final servicosServico = DependenciasWidget.servicosDe(context);
-    final formatadorMoeda = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-      appBar: AppBar(
-        title: const Text('Serviços'),
-        backgroundColor: const Color.fromARGB(255, 252, 218, 218),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-          ),
-        ],
-      ),
+      appBar: const AppBarPadrao(),
       body: StreamBuilder<List<Servico>>(
         stream: servicosServico.observarServicos(),
         builder: (context, snapshot) {
@@ -269,147 +165,300 @@ class ServicesScreen extends StatelessWidget {
               ),
             );
           }
-          final servicos = snapshot.data ?? const <Servico>[];
-          if (servicos.isEmpty) {
+          final todoServicos = snapshot.data ?? const <Servico>[];
+          if (todoServicos.isEmpty) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: Text(
-                  'Nenhum serviço cadastrado ainda. Adicione o primeiro usando o botão acima.',
+                  'Nenhum serviço cadastrado ainda.\nAdicione o primeiro usando o botão abaixo.',
+                  textAlign: TextAlign.center,
                 ),
               ),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            itemCount: servicos.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final servico = servicos[index];
-              final precoFormatado = formatadorMoeda.format(servico.preco);
-              final theme = Theme.of(context);
-              return Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        radius: 26,
-                        backgroundColor: theme.colorScheme.primaryContainer,
-                        foregroundColor: theme.colorScheme.onPrimaryContainer,
-                        child: const Icon(Icons.cut, size: 20),
+
+          return AnimatedBuilder(
+            animation: _searchController,
+            builder: (context, _) {
+              final filtro = _searchController.text;
+              final servicos = _filtrarServicos(todoServicos, filtro);
+
+              if (servicos.isEmpty) {
+                return Column(
+                  children: [
+                    _buildBarraPesquisa(),
+                    const Expanded(
+                      child: Center(
+                        child: Text('Nenhum serviço encontrado.'),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              servico.nome,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
-                              children: [
-                                Chip(
-                                  label: Text(servico.duracaoFormatada),
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              ],
-                            ),
-                            if (servico.descricao?.isNotEmpty == true) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                servico.descricao!,
-                                style: theme.textTheme.bodyMedium,
-                              ),
-                            ],
-                          ],
+                    ),
+                  ],
+                );
+              }
+
+              final agrupados = _agruparPorLetra(servicos);
+              _atualizarChavesDasSecoes(agrupados.keys);
+
+              return Column(
+                children: [
+                  _buildBarraPesquisa(),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        _buildListaServicos(agrupados),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          bottom: 0,
+                          child: _buildIndiceAlfabetico(agrupados.keys.toSet()),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            precoFormatado,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              FilledButton.tonalIcon(
-                                onPressed: () => _openServiceDialog(
-                                  context,
-                                  servico: servico,
-                                ),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                                icon: const Icon(Icons.edit_outlined, size: 18),
-                                label: const Text('Editar'),
-                              ),
-                              const SizedBox(width: 8),
-                              FilledButton.tonalIcon(
-                                onPressed: () {},
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                                icon: const Icon(
-                                  Icons.calendar_today_outlined,
-                                  size: 18,
-                                ),
-                                label: const Text('Agendar'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
               );
             },
           );
         },
       ),
-      bottomNavigationBar: const FloatingMenu(currentRoute: 'teste'),
+      bottomNavigationBar: const FloatingMenu(currentRoute: ServicesScreen.routeName),
       floatingActionButton: FloatingButton(
         label: 'Novo Serviço',
-        onPressed: () =>  _openServiceDialog(context),
+        onPressed: () => _abrirCadastroServico(context),
       ),
     );
   }
 
-  String _formatarDuracao(int minutos) {
-    if (minutos % 60 == 0) {
-      final horas = minutos ~/ 60;
-      return horas == 1 ? '1 hora' : '$horas horas';
+  Widget _buildBarraPesquisa() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 40, 8),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Buscar serviço...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () => _searchController.clear(),
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFCF7072)),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListaServicos(Map<String, List<Servico>> agrupados) {
+    final secoes = <Widget>[];
+
+    for (final entrada in agrupados.entries) {
+      final letra = entrada.key;
+      final servicos = entrada.value;
+
+      secoes.add(
+        Container(
+          key: _chavesDasSecoes[letra],
+          width: double.infinity,
+          color: Colors.grey[200],
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Text(
+            letra,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+      );
+
+      for (final servico in servicos) {
+        secoes.add(_buildItemServico(context, servico));
+      }
     }
-    final horas = minutos ~/ 60;
-    final restante = minutos % 60;
-    if (horas == 0) {
-      return '$restante minutos';
-    }
-    return '${horas}h${restante.toString().padLeft(2, '0')}';
+
+    return ListView(
+      controller: _scrollController,
+      children: secoes,
+    );
+  }
+
+  Widget _buildItemServico(BuildContext context, Servico servico) {
+    final formatadorMoeda = NumberFormat.simpleCurrency(locale: 'pt_BR');
+    final precoFormatado = formatadorMoeda.format(servico.preco);
+    final icone = _obterIconeParaServico(servico);
+
+    return InkWell(
+      onTap: () => _editarServico(context, servico),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.grey[100]!,
+              width: 1,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEC8C8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icone,
+                color: const Color(0xFFCF7072),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    servico.nome,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.schedule,
+                        size: 14,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        servico.duracaoFormatada,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      if (servico.descricao?.isNotEmpty == true) ...[
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            servico.descricao!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[500],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              precoFormatado,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFCF7072),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right,
+              color: Colors.grey[400],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIndiceAlfabetico(Set<String> letrasDisponiveis) {
+    return SizedBox(
+      width: 24,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final alturaDisponivel = constraints.maxHeight;
+          final alturaItem = alturaDisponivel / _alfabeto.length;
+
+          return GestureDetector(
+            onVerticalDragUpdate: (detalhes) {
+              final indice = (detalhes.localPosition.dy / alturaItem)
+                  .clamp(0, _alfabeto.length - 1)
+                  .toInt();
+              final letra = _alfabeto[indice];
+              if (letrasDisponiveis.contains(letra)) {
+                _rolarParaLetra(letra);
+              }
+            },
+            child: ValueListenableBuilder<String>(
+              valueListenable: _letraAtualNotifier,
+              builder: (context, letraAtual, _) {
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: _alfabeto.map((letra) {
+                    final disponivel = letrasDisponiveis.contains(letra);
+                    final selecionada = letra == letraAtual;
+
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: disponivel ? () => _rolarParaLetra(letra) : null,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          alignment: Alignment.center,
+                          decoration: selecionada
+                              ? BoxDecoration(
+                                  color: const Color(0xFFCF7072),
+                                  borderRadius: BorderRadius.circular(10),
+                                )
+                              : null,
+                          child: Text(
+                            letra,
+                            style: TextStyle(
+                              fontSize: selecionada ? 12 : 10,
+                              fontWeight: selecionada ? FontWeight.bold : FontWeight.normal,
+                              color: selecionada
+                                  ? Colors.white
+                                  : disponivel
+                                      ? Colors.grey[700]
+                                      : Colors.grey[300],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
   }
 }
