@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:app_paula_barros/screens/newappointmens_screen.dart';
@@ -26,19 +25,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late final AutenticacaoServico _autenticacao;
   late final AgendamentosServico _agendamentosServico;
-  late final TextEditingController _buscaController;
-  Timer? _debounce;
-  String _termoBusca = '';
+  final String _termoBusca = '';
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateUtils.dateOnly(DateTime.now());
   String _visaoSelecionada = _VisaoCalendario.mes;
-
-  @override
-  void initState() {
-    super.initState();
-    _buscaController = TextEditingController();
-  }
 
   @override
   void didChangeDependencies() {
@@ -47,40 +38,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _agendamentosServico = DependenciasWidget.agendamentosDe(context);
   }
 
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _buscaController.dispose();
-    super.dispose();
-  }
-
-  void _onBuscaAlterada(String texto) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 450), () {
-      if (!mounted) {
-        return;
-      }
-      final novoTermo = texto.trim();
-      if (novoTermo != _termoBusca) {
-        setState(() => _termoBusca = novoTermo);
-      }
-    });
-  }
-
-  void _confirmarBusca() {
-    _debounce?.cancel();
-    final textoAtual = _buscaController.text.trim();
-    if (textoAtual != _termoBusca) {
-      setState(() => _termoBusca = textoAtual);
-    }
-    FocusScope.of(context).unfocus();
-  }
-
   double _alturaCalendario(BuildContext context) {
     final alturaTela = MediaQuery.of(context).size.height;
-    final maximoPermitido = math.max(alturaTela * 0.6, 320.0);
-    final desejado = _calendarFormat == CalendarFormat.month ? 420.0 : 260.0;
-    final minimo = _calendarFormat == CalendarFormat.month ? 320.0 : 200.0;
+    final maximoPermitido = math.max(alturaTela * 0.65, 400.0);
+    final desejado = _calendarFormat == CalendarFormat.month ? 480.0 : 280.0;
+    final minimo = _calendarFormat == CalendarFormat.month ? 400.0 : 220.0;
     final ajustado = desejado.clamp(minimo, maximoPermitido);
     return ajustado.toDouble();
   }
@@ -127,8 +89,8 @@ class _HomeScreenState extends State<HomeScreen> {
             final alturaDisponivelCorpo =
                 alturaCalendario - alturaCabecalhoEstimado - alturaDiasSemana;
             final rowHeight = (alturaDisponivelCorpo / linhasCalendario).clamp(
-              36.0,
-              80.0,
+              52.0,
+              85.0,
             );
 
             return CustomScrollView(
@@ -139,26 +101,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextField(
-                        controller: _buscaController,
-                        onChanged: _onBuscaAlterada,
-                        onEditingComplete: _confirmarBusca,
-                        onSubmitted: (_) => _confirmarBusca(),
-                        textInputAction: TextInputAction.search,
-                        decoration: InputDecoration(
-                          hintText: 'Busca por cliente, serviço ou observação',
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: IconButton(
-                            tooltip: 'Buscar',
-                            onPressed: _confirmarBusca,
-                            icon: const Icon(Icons.search),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
                       _SegmentedPeriodSelector(
                         visaoSelecionada: _visaoSelecionada,
                         onChange: _alterarVisao,
@@ -199,6 +141,40 @@ class _HomeScreenState extends State<HomeScreen> {
                             eventos: events.cast<Agendamento>(),
                           );
                         },
+                        defaultBuilder: (context, day, focusedDay) {
+                          final isWeekend = day.weekday == DateTime.saturday ||
+                              day.weekday == DateTime.sunday;
+                          return _DiaCalendario(
+                            dia: day.day,
+                            corTexto: isWeekend
+                                ? const Color(0xFFCF7072)
+                                : Colors.black87,
+                          );
+                        },
+                        todayBuilder: (context, day, focusedDay) {
+                          final estaSelecionado = isSameDay(_selectedDay, day);
+                          if (estaSelecionado) {
+                            return _DiaCalendario(
+                              dia: day.day,
+                              corFundo: const Color(0xFFCF7072),
+                              corTexto: Colors.white,
+                              negrito: true,
+                            );
+                          }
+                          return _DiaCalendario(
+                            dia: day.day,
+                            corTexto: const Color(0xFFCF7072),
+                            negrito: true,
+                          );
+                        },
+                        selectedBuilder: (context, day, focusedDay) {
+                          return _DiaCalendario(
+                            dia: day.day,
+                            corFundo: const Color(0xFFCF7072),
+                            corTexto: Colors.white,
+                            negrito: true,
+                          );
+                        },
                       ),
                       headerStyle: HeaderStyle(
                         formatButtonVisible: false,
@@ -212,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       daysOfWeekStyle: DaysOfWeekStyle(
                         weekendStyle:
                             (tema.textTheme.bodySmall ?? const TextStyle())
-                                .copyWith(color: tema.colorScheme.primary),
+                                .copyWith(color: const Color(0xFFCF7072)),
                       ),
                       daysOfWeekHeight: alturaDiasSemana,
                       rowHeight: rowHeight.toDouble(),
@@ -302,9 +278,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _visaoSelecionada = visao;
       switch (visao) {
-        case _VisaoCalendario.dia:
-          _calendarFormat = CalendarFormat.week;
-          break;
         case _VisaoCalendario.semana:
           _calendarFormat = CalendarFormat.week;
           break;
@@ -543,20 +516,79 @@ class _IndicadoresAgendamento extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 34, right: 2, left: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(eventos.length, (index) {
-          final cor = _cores[index % _cores.length];
-          return Container(
-            width: 6,
-            height: 6,
-            margin: const EdgeInsets.symmetric(horizontal: 1),
-            decoration: BoxDecoration(color: cor, shape: BoxShape.circle),
-          );
-        }),
-      ),
+    if (eventos.isEmpty) return const SizedBox.shrink();
+
+    final maxBarras = 2;
+    final eventosVisiveis = eventos.take(maxBarras).toList();
+    final restantes = eventos.length - maxBarras;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 26, left: 2, right: 2),
+          child: ClipRect(
+            child: SizedBox(
+              height: constraints.maxHeight - 28,
+              child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ...eventosVisiveis.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final evento = entry.value;
+                      final cor = _cores[index % _cores.length];
+                      return Container(
+                        width: double.infinity,
+                        height: 10,
+                        margin: const EdgeInsets.only(bottom: 1),
+                        decoration: BoxDecoration(
+                          color: cor,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [Colors.white, Colors.transparent],
+                              stops: [0.5, 1.0],
+                            ).createShader(bounds),
+                            blendMode: BlendMode.dstIn,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2),
+                              child: Text(
+                                evento.clienteNome,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 7,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.clip,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                    if (restantes > 0)
+                      Text(
+                        '+$restantes',
+                        style: TextStyle(
+                          fontSize: 7,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -639,7 +671,6 @@ class _SegmentedPeriodSelector extends StatelessWidget {
       width: double.infinity,
       child: SegmentedButton<String>(
         segments: const [
-          ButtonSegment(value: _VisaoCalendario.dia, label: Text('Dia')),
           ButtonSegment(value: _VisaoCalendario.semana, label: Text('Semana')),
           ButtonSegment(value: _VisaoCalendario.mes, label: Text('Mês')),
         ],
@@ -655,7 +686,49 @@ class _SegmentedPeriodSelector extends StatelessWidget {
 }
 
 class _VisaoCalendario {
-  static const dia = 'dia';
   static const semana = 'semana';
   static const mes = 'mes';
+}
+
+class _DiaCalendario extends StatelessWidget {
+  const _DiaCalendario({
+    required this.dia,
+    this.corFundo,
+    this.corTexto = Colors.black87,
+    this.negrito = false,
+  });
+
+  final int dia;
+  final Color? corFundo;
+  final Color corTexto;
+  final bool negrito;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Container(
+          width: 24,
+          height: 24,
+          decoration: corFundo != null
+              ? BoxDecoration(
+                  color: corFundo,
+                  shape: BoxShape.circle,
+                )
+              : null,
+          alignment: Alignment.center,
+          child: Text(
+            '$dia',
+            style: TextStyle(
+              color: corTexto,
+              fontSize: 12,
+              fontWeight: negrito ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
