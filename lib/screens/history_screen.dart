@@ -195,16 +195,51 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
           if (_clienteSelecionado != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Cliente: ${_clienteSelecionado!.nome}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: const Color(0xFFFEC8C8),
+                    backgroundImage: _clienteSelecionado!.fotoUrl != null
+                        ? NetworkImage(_clienteSelecionado!.fotoUrl!)
+                        : null,
+                    child: _clienteSelecionado!.fotoUrl == null
+                        ? Text(
+                            _clienteSelecionado!.nome.isNotEmpty
+                                ? _clienteSelecionado!.nome[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFCF7072),
+                            ),
+                          )
+                        : null,
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Histórico de',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Text(
+                          _clienteSelecionado!.nome,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           const Divider(),
@@ -428,92 +463,281 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildClientHistoryList(List<Agendamento> agendamentos) {
+    // Agrupa os agendamentos por mês/ano
+    final Map<String, List<Agendamento>> agrupadosPorMes = {};
+    for (var agendamento in agendamentos) {
+      final mesAno = DateFormat('MMMM yyyy', 'pt_BR').format(agendamento.inicio);
+      agrupadosPorMes.putIfAbsent(mesAno, () => []).add(agendamento);
+    }
+
+    final mesesOrdenados = agrupadosPorMes.keys.toList();
+
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: agendamentos.length,
-      itemBuilder: (context, index) {
-        final agendamento = agendamentos[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundImage: _clienteSelecionado?.fotoUrl != null
-                      ? NetworkImage(_clienteSelecionado!.fotoUrl!)
-                      : null,
-                  child: _clienteSelecionado?.fotoUrl == null
-                      ? const Icon(Icons.person, size: 30)
-                      : null,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            agendamento.clienteNome,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Text(
-                            DateFormat('dd/MM/yyyy').format(agendamento.inicio),
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: mesesOrdenados.length,
+      itemBuilder: (context, mesIndex) {
+        final mesAno = mesesOrdenados[mesIndex];
+        final agendamentosDoMes = agrupadosPorMes[mesAno]!;
+        final totalMes = agendamentosDoMes.fold<double>(
+          0,
+          (sum, item) => sum + item.total,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cabeçalho do mês
+            Container(
+              margin: const EdgeInsets.only(top: 16, bottom: 12),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCF7072),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      mesAno.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        letterSpacing: 0.5,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Procedimento(s): ${agendamento.descricaoServicos}',
-                        style: TextStyle(color: Colors.grey[700]),
-                      ),
-                      if (agendamento.observacoes != null &&
-                          agendamento.observacoes!.isNotEmpty)
-                        Text(
-                          'Observação: ${agendamento.observacoes}',
-                          style: TextStyle(color: Colors.grey[700]),
-                        ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Valor: ${_currencyFormat.format(agendamento.total)}',
-                        style: TextStyle(color: Colors.grey[700]),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Início: ${DateFormat('HH:mm').format(agendamento.inicio)}',
-                            style: TextStyle(color: Colors.grey[700]),
-                          ),
-                          if (agendamento.fim != null)
-                            Text(
-                              'Fim: ${DateFormat('HH:mm').format(agendamento.fim!)}',
-                              style: TextStyle(color: Colors.grey[700]),
-                            ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      height: 1,
+                      color: Colors.grey[300],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    _currencyFormat.format(totalMes),
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            // Lista de agendamentos do mês
+            ...agendamentosDoMes.asMap().entries.map((entry) {
+              final index = entry.key;
+              final agendamento = entry.value;
+              final isLast = index == agendamentosDoMes.length - 1;
+
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Timeline lateral
+                    SizedBox(
+                      width: 60,
+                      child: Column(
+                        children: [
+                          // Data
+                          Container(
+                            width: 44,
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEC8C8),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  DateFormat('dd').format(agendamento.inicio),
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFCF7072),
+                                  ),
+                                ),
+                                Text(
+                                  DateFormat('EEE', 'pt_BR').format(agendamento.inicio).toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Linha conectora
+                          if (!isLast)
+                            Expanded(
+                              child: Container(
+                                width: 2,
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      const Color(0xFFCF7072).withOpacity(0.5),
+                                      const Color(0xFFCF7072).withOpacity(0.1),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Card do agendamento
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header do card com horário
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.schedule,
+                                    size: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    DateFormat('HH:mm').format(agendamento.inicio),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                  if (agendamento.fim != null) ...[
+                                    Text(
+                                      ' - ${DateFormat('HH:mm').format(agendamento.fim!)}',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                  ],
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFCF7072),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      _currencyFormat.format(agendamento.total),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Conteúdo do card
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Serviços
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFEC8C8),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(
+                                          Icons.content_cut,
+                                          size: 18,
+                                          color: Color(0xFFCF7072),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              agendamento.descricaoServicos,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            if (agendamento.observacoes != null &&
+                                                agendamento.observacoes!.isNotEmpty)
+                                              Padding(
+                                                padding: const EdgeInsets.only(top: 6),
+                                                child: Row(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.notes,
+                                                      size: 14,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Expanded(
+                                                      child: Text(
+                                                        agendamento.observacoes!,
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          color: Colors.grey[600],
+                                                          fontStyle: FontStyle.italic,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
         );
       },
     );
