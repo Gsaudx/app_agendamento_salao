@@ -4,9 +4,11 @@ class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
   const AppBarPadrao({
     super.key,
     this.onLogout,
+    this.leading,
   });
 
   final VoidCallback? onLogout;
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +17,7 @@ class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       centerTitle: true,
       automaticallyImplyLeading: false,
+      leading: leading,
       title: Image.asset(
         'assets/img/logo_paula_barros.png',
         height: 50,

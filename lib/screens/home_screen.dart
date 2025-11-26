@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:app_paula_barros/screens/newappointmens_screen.dart';
 import 'package:flutter/material.dart';
@@ -30,12 +31,20 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateUtils.dateOnly(DateTime.now());
   String _visaoSelecionada = _VisaoCalendario.mes;
+  bool _diaExpandido = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _autenticacao = DependenciasWidget.autenticacaoDe(context);
     _agendamentosServico = DependenciasWidget.agendamentosDe(context);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   double _alturaCalendario(BuildContext context) {
@@ -54,6 +63,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBarPadrao(
         onLogout: () => _sair(context),
+        leading: _diaExpandido
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _voltarParaCalendario,
+              )
+            : null,
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -79,158 +94,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 eventosPorDia[_selectedDay] ?? const <Agendamento>[];
             final filtrados = _aplicarFiltro(selecionados);
 
-            final alturaCalendario = _alturaCalendario(context);
-            final possuiResultados = filtrados.isNotEmpty;
-            const alturaCabecalhoEstimado = 68.0;
-            const alturaDiasSemana = 24.0;
-            final linhasCalendario = _calendarFormat == CalendarFormat.month
-                ? 6
-                : 1;
-            final alturaDisponivelCorpo =
-                alturaCalendario - alturaCabecalhoEstimado - alturaDiasSemana;
-            final rowHeight = (alturaDisponivelCorpo / linhasCalendario).clamp(
-              52.0,
-              85.0,
-            );
+            if (_diaExpandido) {
+              return _buildVisaoDiaExpandido(
+                tema,
+                eventosPorDia,
+                filtrados,
+              );
+            }
 
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _SegmentedPeriodSelector(
-                        visaoSelecionada: _visaoSelecionada,
-                        onChange: _alterarVisao,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: alturaCalendario,
-                    child: TableCalendar<Agendamento>(
-                      locale: 'pt_BR',
-                      firstDay: DateTime.utc(2020, 1, 1),
-                      lastDay: DateTime.utc(2035, 12, 31),
-                      focusedDay: _focusedDay,
-                      selectedDayPredicate: (day) =>
-                          isSameDay(_selectedDay, day),
-                      calendarFormat: _calendarFormat,
-                      availableGestures: AvailableGestures.horizontalSwipe,
-                      eventLoader: (day) =>
-                          eventosPorDia[DateUtils.dateOnly(day)] ?? const [],
-                      onDaySelected: (selected, focused) {
-                        setState(() {
-                          _selectedDay = DateUtils.dateOnly(selected);
-                          _focusedDay = focused;
-                        });
-                      },
-                      onFormatChanged: (format) {
-                        setState(() => _calendarFormat = format);
-                      },
-                      calendarBuilders: CalendarBuilders(
-                        markerBuilder: (context, day, events) {
-                          if (events.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-                          return _IndicadoresAgendamento(
-                            eventos: events.cast<Agendamento>(),
-                          );
-                        },
-                        defaultBuilder: (context, day, focusedDay) {
-                          final isWeekend = day.weekday == DateTime.saturday ||
-                              day.weekday == DateTime.sunday;
-                          return _DiaCalendario(
-                            dia: day.day,
-                            corTexto: isWeekend
-                                ? const Color(0xFFCF7072)
-                                : Colors.black87,
-                          );
-                        },
-                        todayBuilder: (context, day, focusedDay) {
-                          final estaSelecionado = isSameDay(_selectedDay, day);
-                          if (estaSelecionado) {
-                            return _DiaCalendario(
-                              dia: day.day,
-                              corFundo: const Color(0xFFCF7072),
-                              corTexto: Colors.white,
-                              negrito: true,
-                            );
-                          }
-                          return _DiaCalendario(
-                            dia: day.day,
-                            corTexto: const Color(0xFFCF7072),
-                            negrito: true,
-                          );
-                        },
-                        selectedBuilder: (context, day, focusedDay) {
-                          return _DiaCalendario(
-                            dia: day.day,
-                            corFundo: const Color(0xFFCF7072),
-                            corTexto: Colors.white,
-                            negrito: true,
-                          );
-                        },
-                      ),
-                      headerStyle: HeaderStyle(
-                        formatButtonVisible: false,
-                        titleCentered: true,
-                        headerPadding: const EdgeInsets.only(bottom: 8),
-                        titleTextFormatter: (date, locale) =>
-                            DateFormat.yMMMM('pt_BR').format(date),
-                        leftChevronIcon: const Icon(Icons.chevron_left),
-                        rightChevronIcon: const Icon(Icons.chevron_right),
-                      ),
-                      daysOfWeekStyle: DaysOfWeekStyle(
-                        weekendStyle:
-                            (tema.textTheme.bodySmall ?? const TextStyle())
-                                .copyWith(color: const Color(0xFFCF7072)),
-                      ),
-                      daysOfWeekHeight: alturaDiasSemana,
-                      rowHeight: rowHeight.toDouble(),
-                      calendarStyle: const CalendarStyle(
-                        outsideDaysVisible: false,
-                        tablePadding: EdgeInsets.symmetric(vertical: 4),
-                        cellMargin: EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                if (possuiResultados)
-                  SliverPadding(
-                    padding: const EdgeInsets.only(top: 12, bottom: 88),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final agendamento = filtrados[index];
-                        final paddingInferior = index == filtrados.length - 1
-                            ? 0.0
-                            : 8.0;
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: paddingInferior),
-                          child: _AgendamentoCard(
-                            agendamento: agendamento,
-                            onTap: _mostrarDetalhes,
-                          ),
-                        );
-                      }, childCount: filtrados.length),
-                    ),
-                  )
-                else
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 12, bottom: 88),
-                      child: _ListaVazia(selectedDay: _selectedDay),
-                    ),
-                  ),
-              ],
+            return _buildVisaoCalendario(
+              tema,
+              eventosPorDia,
+              filtrados,
             );
           },
         ),
@@ -243,6 +118,240 @@ class _HomeScreenState extends State<HomeScreen> {
         label: const Text('Novo agendamento'),
       ),
     );
+  }
+
+  Widget _buildVisaoCalendario(
+    ThemeData tema,
+    Map<DateTime, List<Agendamento>> eventosPorDia,
+    List<Agendamento> filtrados,
+  ) {
+    final alturaCalendario = _alturaCalendario(context);
+    const alturaCabecalhoEstimado = 68.0;
+    const alturaDiasSemana = 24.0;
+    final linhasCalendario = _calendarFormat == CalendarFormat.month ? 6 : 1;
+    final alturaDisponivelCorpo =
+        alturaCalendario - alturaCabecalhoEstimado - alturaDiasSemana;
+    final rowHeight = (alturaDisponivelCorpo / linhasCalendario).clamp(
+      52.0,
+      85.0,
+    );
+
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SegmentedPeriodSelector(
+                visaoSelecionada: _visaoSelecionada,
+                onChange: _alterarVisao,
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: alturaCalendario,
+            child: TableCalendar<Agendamento>(
+              locale: 'pt_BR',
+              firstDay: DateTime.utc(2020, 1, 1),
+              lastDay: DateTime.utc(2035, 12, 31),
+              focusedDay: _focusedDay,
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              calendarFormat: _calendarFormat,
+              availableGestures: AvailableGestures.horizontalSwipe,
+              eventLoader: (day) =>
+                  eventosPorDia[DateUtils.dateOnly(day)] ?? const [],
+              onDaySelected: (selected, focused) {
+                setState(() {
+                  _selectedDay = DateUtils.dateOnly(selected);
+                  _focusedDay = focused;
+                  _diaExpandido = true;
+                });
+                _scrollParaHoraAtual();
+              },
+              onFormatChanged: (format) {
+                setState(() => _calendarFormat = format);
+              },
+              calendarBuilders: CalendarBuilders(
+                markerBuilder: (context, day, events) {
+                  if (events.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return _IndicadoresAgendamento(
+                    eventos: events.cast<Agendamento>(),
+                  );
+                },
+                defaultBuilder: (context, day, focusedDay) {
+                  final isWeekend = day.weekday == DateTime.saturday ||
+                      day.weekday == DateTime.sunday;
+                  return _DiaCalendario(
+                    dia: day.day,
+                    corTexto:
+                        isWeekend ? const Color(0xFFCF7072) : Colors.black87,
+                  );
+                },
+                todayBuilder: (context, day, focusedDay) {
+                  final estaSelecionado = isSameDay(_selectedDay, day);
+                  if (estaSelecionado) {
+                    return _DiaCalendario(
+                      dia: day.day,
+                      corFundo: const Color(0xFFCF7072),
+                      corTexto: Colors.white,
+                      negrito: true,
+                    );
+                  }
+                  return _DiaCalendario(
+                    dia: day.day,
+                    corTexto: const Color(0xFFCF7072),
+                    negrito: true,
+                  );
+                },
+                selectedBuilder: (context, day, focusedDay) {
+                  return _DiaCalendario(
+                    dia: day.day,
+                    corFundo: const Color(0xFFCF7072),
+                    corTexto: Colors.white,
+                    negrito: true,
+                  );
+                },
+              ),
+              headerStyle: HeaderStyle(
+                formatButtonVisible: false,
+                titleCentered: true,
+                headerPadding: const EdgeInsets.only(bottom: 8),
+                titleTextFormatter: (date, locale) =>
+                    DateFormat.yMMMM('pt_BR').format(date),
+                leftChevronIcon: const Icon(Icons.chevron_left),
+                rightChevronIcon: const Icon(Icons.chevron_right),
+              ),
+              daysOfWeekStyle: DaysOfWeekStyle(
+                weekendStyle: (tema.textTheme.bodySmall ?? const TextStyle())
+                    .copyWith(color: const Color(0xFFCF7072)),
+              ),
+              daysOfWeekHeight: alturaDiasSemana,
+              rowHeight: rowHeight.toDouble(),
+              calendarStyle: const CalendarStyle(
+                outsideDaysVisible: false,
+                tablePadding: EdgeInsets.symmetric(vertical: 4),
+                cellMargin: EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 2,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(
+          child: SizedBox(height: 88),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVisaoDiaExpandido(
+    ThemeData tema,
+    Map<DateTime, List<Agendamento>> eventosPorDia,
+    List<Agendamento> agendamentosDoDia,
+  ) {
+    final dataFormatada = DateFormat.yMMMMEEEEd('pt_BR').format(_selectedDay);
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 110,
+          child: TableCalendar<Agendamento>(
+            locale: 'pt_BR',
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2035, 12, 31),
+            focusedDay: _focusedDay,
+            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+            calendarFormat: CalendarFormat.week,
+            availableGestures: AvailableGestures.horizontalSwipe,
+            headerVisible: false,
+            daysOfWeekHeight: 24,
+            rowHeight: 56,
+            onDaySelected: (selected, focused) {
+              setState(() {
+                _selectedDay = DateUtils.dateOnly(selected);
+                _focusedDay = focused;
+              });
+              _scrollParaHoraAtual();
+            },
+            calendarBuilders: CalendarBuilders(
+              defaultBuilder: (context, day, focusedDay) {
+                return _DiaCalendarioCompacto(
+                  dia: day,
+                  selecionado: false,
+                  hoje: isSameDay(day, DateTime.now()),
+                );
+              },
+              todayBuilder: (context, day, focusedDay) {
+                final estaSelecionado = isSameDay(_selectedDay, day);
+                return _DiaCalendarioCompacto(
+                  dia: day,
+                  selecionado: estaSelecionado,
+                  hoje: true,
+                );
+              },
+              selectedBuilder: (context, day, focusedDay) {
+                return _DiaCalendarioCompacto(
+                  dia: day,
+                  selecionado: true,
+                  hoje: isSameDay(day, DateTime.now()),
+                );
+              },
+            ),
+            calendarStyle: const CalendarStyle(
+              outsideDaysVisible: true,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            dataFormatada,
+            style: tema.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: _GradeHorarios(
+            scrollController: _scrollController,
+            agendamentos: agendamentosDoDia,
+            diaSelecionado: _selectedDay,
+            onAgendamentoTap: _mostrarDetalhes,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _voltarParaCalendario() {
+    setState(() {
+      _diaExpandido = false;
+    });
+  }
+
+  void _scrollParaHoraAtual() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      final agora = DateTime.now();
+      final horaAtual = agora.hour;
+      const alturaHora = 60.0;
+      const paddingTopo = 20.0;
+      final offset = (horaAtual * alturaHora) + paddingTopo - 100;
+      _scrollController.animateTo(
+        offset.clamp(0.0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   Map<DateTime, List<Agendamento>> _organizarPorDia(
@@ -524,134 +633,73 @@ class _IndicadoresAgendamento extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final alturaDisponivel = constraints.maxHeight - 28;
+        if (alturaDisponivel <= 0) return const SizedBox.shrink();
+        
         return Padding(
           padding: const EdgeInsets.only(top: 26, left: 2, right: 2),
-          child: ClipRect(
-            child: SizedBox(
-              height: constraints.maxHeight - 28,
-              child: SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ...eventosVisiveis.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final evento = entry.value;
-                      final cor = _cores[index % _cores.length];
-                      return Container(
-                        width: double.infinity,
-                        height: 10,
-                        margin: const EdgeInsets.only(bottom: 1),
-                        decoration: BoxDecoration(
-                          color: cor,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(3),
-                          child: ShaderMask(
-                            shaderCallback: (bounds) => const LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [Colors.white, Colors.transparent],
-                              stops: [0.5, 1.0],
-                            ).createShader(bounds),
-                            blendMode: BlendMode.dstIn,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 2),
-                              child: Text(
-                                evento.clienteNome,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 7,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                overflow: TextOverflow.clip,
-                                maxLines: 1,
+          child: SizedBox(
+            height: alturaDisponivel,
+            child: OverflowBox(
+              maxHeight: alturaDisponivel,
+              alignment: Alignment.topCenter,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ...eventosVisiveis.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final evento = entry.value;
+                    final cor = _cores[index % _cores.length];
+                    return Container(
+                      width: double.infinity,
+                      height: 10,
+                      margin: const EdgeInsets.only(bottom: 1),
+                      decoration: BoxDecoration(
+                        color: cor,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [Colors.white, Colors.transparent],
+                            stops: [0.5, 1.0],
+                          ).createShader(bounds),
+                          blendMode: BlendMode.dstIn,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: Text(
+                              evento.clienteNome,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 7,
+                                fontWeight: FontWeight.w500,
                               ),
+                              overflow: TextOverflow.clip,
+                              maxLines: 1,
                             ),
                           ),
                         ),
-                      );
-                    }),
-                    if (restantes > 0)
-                      Text(
-                        '+$restantes',
-                        style: TextStyle(
-                          fontSize: 7,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade600,
-                        ),
                       ),
-                  ],
-                ),
+                    );
+                  }),
+                  if (restantes > 0 && alturaDisponivel > 22)
+                    Text(
+                      '+$restantes',
+                      style: TextStyle(
+                        fontSize: 7,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
         );
       },
-    );
-  }
-}
-
-class _AgendamentoCard extends StatelessWidget {
-  const _AgendamentoCard({required this.agendamento, required this.onTap});
-
-  final Agendamento agendamento;
-  final ValueChanged<Agendamento> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    final formatadorHora = DateFormat.Hm('pt_BR');
-    final formatadorMoeda = NumberFormat.simpleCurrency(locale: 'pt_BR');
-    final horaInicio = formatadorHora.format(agendamento.inicio);
-    final horaFim = formatadorHora.format(
-      agendamento.fim ??
-          agendamento.inicio.add(Duration(minutes: agendamento.duracaoMinutos)),
-    );
-    return Card(
-      child: ListTile(
-        title: Text(agendamento.clienteNome),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text('$horaInicio - $horaFim'),
-            const SizedBox(height: 4),
-            Text(
-              agendamento.descricaoServicos,
-              style: tema.textTheme.bodySmall,
-            ),
-          ],
-        ),
-        trailing: Text(
-          formatadorMoeda.format(agendamento.total),
-          style: tema.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        onTap: () => onTap(agendamento),
-      ),
-    );
-  }
-}
-
-class _ListaVazia extends StatelessWidget {
-  const _ListaVazia({required this.selectedDay});
-
-  final DateTime selectedDay;
-
-  @override
-  Widget build(BuildContext context) {
-    final dataFormatada = DateFormat.yMMMMd('pt_BR').format(selectedDay);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(
-          'Nenhum agendamento em $dataFormatada. Que tal adicionar um?',
-          textAlign: TextAlign.center,
-        ),
-      ),
     );
   }
 }
@@ -728,6 +776,307 @@ class _DiaCalendario extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DiaCalendarioCompacto extends StatelessWidget {
+  const _DiaCalendarioCompacto({
+    required this.dia,
+    required this.selecionado,
+    required this.hoje,
+  });
+
+  final DateTime dia;
+  final bool selecionado;
+  final bool hoje;
+
+  @override
+  Widget build(BuildContext context) {
+    final diasSemana = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+    final diaSemana = diasSemana[dia.weekday % 7];
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          diaSemana,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: selecionado
+                ? const Color(0xFFCF7072)
+                : hoje
+                    ? const Color(0xFFFEC8C8)
+                    : null,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '${dia.day}',
+            style: TextStyle(
+              color: selecionado
+                  ? Colors.white
+                  : hoje
+                      ? const Color(0xFFCF7072)
+                      : Colors.black87,
+              fontWeight:
+                  selecionado || hoje ? FontWeight.bold : FontWeight.normal,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GradeHorarios extends StatelessWidget {
+  const _GradeHorarios({
+    required this.scrollController,
+    required this.agendamentos,
+    required this.diaSelecionado,
+    required this.onAgendamentoTap,
+  });
+
+  final ScrollController scrollController;
+  final List<Agendamento> agendamentos;
+  final DateTime diaSelecionado;
+  final ValueChanged<Agendamento> onAgendamentoTap;
+
+  static const double alturaHora = 60.0;
+  static const int horaInicio = 0;
+  static const int horaFim = 24;
+  static const double paddingTopo = 20.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final agora = DateTime.now();
+    final ehHoje = DateUtils.isSameDay(diaSelecionado, agora);
+    final alturaTotal = (horaFim - horaInicio) * alturaHora + paddingTopo + 20;
+
+    return SingleChildScrollView(
+      controller: scrollController,
+      padding: const EdgeInsets.only(bottom: 88),
+      child: SizedBox(
+        height: alturaTotal,
+        child: Stack(
+          children: [
+            Positioned(
+              top: paddingTopo,
+              left: 0,
+              right: 0,
+              bottom: 20,
+              child: CustomPaint(
+                size: Size(double.infinity, (horaFim - horaInicio) * alturaHora),
+                painter: _GradeHorariosPainter(
+                  horaInicio: horaInicio,
+                  horaFim: horaFim,
+                  alturaHora: alturaHora,
+                ),
+              ),
+            ),
+            ...agendamentos.map((agendamento) {
+              return _BlocoAgendamento(
+                agendamento: agendamento,
+                horaInicio: horaInicio,
+                alturaHora: alturaHora,
+                paddingTopo: paddingTopo,
+                onTap: () => onAgendamentoTap(agendamento),
+              );
+            }),
+            if (ehHoje)
+              _LinhaHoraAtual(
+                horaInicio: horaInicio,
+                alturaHora: alturaHora,
+                paddingTopo: paddingTopo,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GradeHorariosPainter extends CustomPainter {
+  _GradeHorariosPainter({
+    required this.horaInicio,
+    required this.horaFim,
+    required this.alturaHora,
+  });
+
+  final int horaInicio;
+  final int horaFim;
+  final double alturaHora;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.grey.shade300
+      ..strokeWidth = 0.5;
+
+    final textPainter = TextPainter(
+      textDirection: ui.TextDirection.ltr,
+    );
+
+    for (var hora = horaInicio; hora < horaFim; hora++) {
+      final y = (hora - horaInicio) * alturaHora;
+
+      canvas.drawLine(
+        Offset(50, y),
+        Offset(size.width, y),
+        paint,
+      );
+
+      final horaFormatada = '${hora.toString().padLeft(2, '0')}:00';
+      textPainter.text = TextSpan(
+        text: horaFormatada,
+        style: TextStyle(
+          color: Colors.grey.shade600,
+          fontSize: 11,
+        ),
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(4, y - 6));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _BlocoAgendamento extends StatelessWidget {
+  const _BlocoAgendamento({
+    required this.agendamento,
+    required this.horaInicio,
+    required this.alturaHora,
+    required this.onTap,
+    this.paddingTopo = 0,
+  });
+
+  final Agendamento agendamento;
+  final int horaInicio;
+  final double alturaHora;
+  final VoidCallback onTap;
+  final double paddingTopo;
+
+  static const _cores = <Color>[
+    Color(0xFFCF7072),
+    Color(0xFFF2AA4C),
+    Color(0xFF9C89B8),
+    Color(0xFF5A9E8F),
+    Color(0xFF4D6CFA),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final inicio = agendamento.inicio;
+    final fim = agendamento.fim ??
+        inicio.add(Duration(minutes: agendamento.duracaoMinutos));
+
+    final minutosDesdeInicio =
+        (inicio.hour - horaInicio) * 60 + inicio.minute;
+    final duracaoMinutos = fim.difference(inicio).inMinutes;
+
+    final top = (minutosDesdeInicio / 60) * alturaHora + paddingTopo;
+    final altura = (duracaoMinutos / 60) * alturaHora;
+
+    final cor = _cores[agendamento.clienteNome.hashCode % _cores.length];
+    final corClara = cor.withOpacity(0.15);
+
+    final formatadorHora = DateFormat.Hm('pt_BR');
+
+    return Positioned(
+      top: top,
+      left: 55,
+      right: 8,
+      height: altura.clamp(30.0, double.infinity),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: corClara,
+            borderRadius: BorderRadius.circular(4),
+            border: Border(
+              left: BorderSide(color: cor, width: 3),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                agendamento.clienteNome,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: cor,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (altura > 40)
+                Text(
+                  '${formatadorHora.format(inicio)} - ${formatadorHora.format(fim)}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LinhaHoraAtual extends StatelessWidget {
+  const _LinhaHoraAtual({
+    required this.horaInicio,
+    required this.alturaHora,
+    this.paddingTopo = 0,
+  });
+
+  final int horaInicio;
+  final double alturaHora;
+  final double paddingTopo;
+
+  @override
+  Widget build(BuildContext context) {
+    final agora = DateTime.now();
+    final minutosDesdeInicio = (agora.hour - horaInicio) * 60 + agora.minute;
+    final top = (minutosDesdeInicio / 60) * alturaHora + paddingTopo;
+
+    return Positioned(
+      top: top,
+      left: 0,
+      right: 0,
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: Color(0xFFCF7072),
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: Container(
+              height: 1.5,
+              color: const Color(0xFFCF7072),
+            ),
+          ),
+        ],
       ),
     );
   }
