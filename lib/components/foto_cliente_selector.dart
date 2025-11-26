@@ -16,7 +16,6 @@ class FotoSelecionada {
   final String nome;
 }
 
-/// Widget para seleção e exibição de foto de cliente.
 class FotoClienteSelector extends StatelessWidget {
   const FotoClienteSelector({
     super.key,
@@ -28,22 +27,16 @@ class FotoClienteSelector extends StatelessWidget {
     this.radius = 80,
   });
 
-  /// URL da foto atual (do Firebase Storage)
   final String? fotoUrl;
 
-  /// Foto recém-selecionada (antes do upload)
   final FotoSelecionada? fotoSelecionada;
 
-  /// Callback quando uma nova foto é selecionada
   final ValueChanged<FotoSelecionada?> onFotoSelecionada;
 
-  /// Callback para remover a foto
   final VoidCallback? onRemoverFoto;
 
-  /// Se está fazendo upload
   final bool carregando;
 
-  /// Raio do CircleAvatar
   final double radius;
 
   @override
@@ -111,7 +104,6 @@ class FotoClienteSelector extends StatelessWidget {
   bool get _temFoto => fotoSelecionada != null || (fotoUrl?.isNotEmpty ?? false);
 
   Widget _buildAvatar() {
-    // Prioriza foto recém-selecionada
     if (fotoSelecionada != null) {
       return CircleAvatar(
         radius: radius,
@@ -119,7 +111,6 @@ class FotoClienteSelector extends StatelessWidget {
       );
     }
 
-    // Foto salva no Firebase
     if (fotoUrl != null && fotoUrl!.isNotEmpty) {
       return CircleAvatar(
         radius: radius,
@@ -129,7 +120,6 @@ class FotoClienteSelector extends StatelessWidget {
       );
     }
 
-    // Placeholder
     return CircleAvatar(
       radius: radius,
       backgroundColor: Colors.grey[300],
