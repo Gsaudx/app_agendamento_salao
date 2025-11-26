@@ -4,265 +4,38 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../components/app_bar_padrao.dart';
-import '../components/Input.dart';
 import '../components/floating_menu.dart';
-import '../components/select.dart';
-import '../dependencias/dependencias_widget.dart';
-import '../formatters/moeda_input_formatter.dart';
 import '../modelos/servico.dart';
+import '../dependencias/dependencias_widget.dart';
+import 'editservice_screen.dart';
+import 'newservice_screen.dart';
 
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
 
   static const routeName = '/services';
 
-  Future<void> _openServiceDialog(
-    BuildContext context, {
-    Servico? servico,
-  }) async {
-    final servicosServico = DependenciasWidget.servicosDe(context);
-    final nomeController = TextEditingController(text: servico?.nome ?? '');
-    final precoController = TextEditingController(
-      text: servico != null
-          ? NumberFormat.currency(
-              locale: 'pt_BR',
-              symbol: '',
-            ).format(servico.preco).trim()
-          : '',
+  Future<void> _abrirCadastroServico(BuildContext context) async {
+    final resultado = await Navigator.pushNamed(
+      context,
+      NewServiceScreen.routeName,
     );
-    final descricaoController = TextEditingController(
-      text: servico?.descricao ?? '',
-    );
-    const duracoesDisponiveis = <int>[30, 45, 60, 90, 120];
-    int? duracaoSelecionada = servico?.duracaoMinutos;
-    bool salvando = false;
-
-    final resultado = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(16),
-                  bottom: Radius.circular(16),
-                ),
-              ),
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 40,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 16,
-                    bottom: MediaQuery.of(dialogContext).viewInsets.bottom + 16,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          servico == null
-                              ? 'Adicionar serviço'
-                              : 'Editar serviço',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        Input(
-                          label: 'Nome',
-                          controller: nomeController,
-                          placeholder: 'Digite o nome do serviço',
-                        ),
-                        Select<int>(
-                          label: 'Duração',
-                          placeholder: 'Selecione a duração',
-                          items: duracoesDisponiveis,
-                          value: duracaoSelecionada,
-                          onChanged: (valor) =>
-                              setState(() => duracaoSelecionada = valor),
-                          itemLabel: (valor) => _formatarDuracao(valor),
-                        ),
-                        Input(
-                          label: 'Preço',
-                          controller: precoController,
-                          placeholder: '0,00',
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          inputFormatters: [MoedaInputFormatter()],
-                          prefixText: 'R\$ ',
-                        ),
-                        Input(
-                          label: 'Descrição (opcional)',
-                          controller: descricaoController,
-                          placeholder: 'Resumo rápido do serviço',
-                          maxLines: 3,
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: salvando
-                                    ? null
-                                    : () => Navigator.of(
-                                        dialogContext,
-                                      ).pop(false),
-                                child: const Text('Cancelar'),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: FilledButton(
-                                onPressed: salvando
-                                    ? null
-                                    : () async {
-                                        final nome = nomeController.text.trim();
-                                        final preco =
-                                            MoedaInputFormatter.toDouble(
-                                              precoController.text,
-                                            ) ??
-                                            -1;
-                                        if (nome.isEmpty ||
-                                            duracaoSelecionada == null ||
-                                            preco < 0) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Informe nome, duração e um preço válido.',
-                                              ),
-                                            ),
-                                          );
-                                          return;
-                                        }
-                                        setState(() => salvando = true);
-                                        try {
-                                          if (servico == null) {
-                                            await servicosServico.criarServico(
-                                              nome: nome,
-                                              duracaoMinutos:
-                                                  duracaoSelecionada!,
-                                              preco: preco,
-                                              descricao:
-                                                  descricaoController.text
-                                                      .trim()
-                                                      .isEmpty
-                                                  ? null
-                                                  : descricaoController.text
-                                                        .trim(),
-                                            );
-                                          } else {
-                                            await servicosServico
-                                                .atualizarServico(
-                                                  servico.id,
-                                                  nome: nome,
-                                                  duracaoMinutos:
-                                                      duracaoSelecionada!,
-                                                  preco: preco,
-                                                  descricao:
-                                                      descricaoController.text
-                                                          .trim()
-                                                          .isEmpty
-                                                      ? null
-                                                      : descricaoController.text
-                                                            .trim(),
-                                                );
-                                          }
-                                          if (servico == null) {
-                                            await servicosServico.criarServico(
-                                              nome: nome,
-                                              duracaoMinutos:
-                                                  duracaoSelecionada!,
-                                              preco: preco,
-                                              descricao:
-                                                  descricaoController.text
-                                                      .trim()
-                                                      .isEmpty
-                                                  ? null
-                                                  : descricaoController.text
-                                                        .trim(),
-                                            );
-                                          } else {
-                                            await servicosServico
-                                                .atualizarServico(
-                                                  servico.id,
-                                                  nome: nome,
-                                                  duracaoMinutos:
-                                                      duracaoSelecionada!,
-                                                  preco: preco,
-                                                  descricao:
-                                                      descricaoController.text
-                                                          .trim()
-                                                          .isEmpty
-                                                      ? null
-                                                      : descricaoController.text
-                                                            .trim(),
-                                                );
-                                          }
-                                          if (context.mounted) {
-                                            Navigator.of(
-                                              dialogContext,
-                                            ).pop(true);
-                                          }
-                                        } catch (erro) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Não foi possível salvar: $erro',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                          setState(() => salvando = false);
-                                        }
-                                      },
-                                child: salvando
-                                    ? const SizedBox(
-                                        height: 18,
-                                        width: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text('Salvar'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-
-    nomeController.dispose();
-    precoController.dispose();
-    descricaoController.dispose();
-
     if (resultado == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            servico == null
-                ? 'Serviço cadastrado com sucesso.'
-                : 'Serviço atualizado com sucesso.',
-          ),
-        ),
+        const SnackBar(content: Text('Serviço cadastrado com sucesso.')),
+      );
+    }
+  }
+
+  Future<void> _editarServico(BuildContext context, Servico servico) async {
+    final resultado = await Navigator.pushNamed(
+      context,
+      EditServiceScreen.routeName,
+      arguments: servico,
+    );
+    if (resultado == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Serviço atualizado com sucesso.')),
       );
     }
   }
@@ -369,10 +142,7 @@ class ServicesScreen extends StatelessWidget {
                           Row(
                             children: [
                               FilledButton.tonalIcon(
-                                onPressed: () => _openServiceDialog(
-                                  context,
-                                  servico: servico,
-                                ),
+                                onPressed: () => _editarServico(context, servico),
                                 style: FilledButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -414,21 +184,8 @@ class ServicesScreen extends StatelessWidget {
       bottomNavigationBar: const FloatingMenu(currentRoute: ServicesScreen.routeName),
       floatingActionButton: FloatingButton(
         label: 'Novo Serviço',
-        onPressed: () =>  _openServiceDialog(context),
+        onPressed: () => _abrirCadastroServico(context),
       ),
     );
-  }
-
-  String _formatarDuracao(int minutos) {
-    if (minutos % 60 == 0) {
-      final horas = minutos ~/ 60;
-      return horas == 1 ? '1 hora' : '$horas horas';
-    }
-    final horas = minutos ~/ 60;
-    final restante = minutos % 60;
-    if (horas == 0) {
-      return '$restante minutos';
-    }
-    return '${horas}h${restante.toString().padLeft(2, '0')}';
   }
 }

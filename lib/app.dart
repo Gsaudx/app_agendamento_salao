@@ -7,9 +7,11 @@ import 'dependencias/dependencias_widget.dart';
 import 'screens/appointments_screen.dart';
 import 'screens/clients_screen.dart';
 import 'screens/editclient_screen.dart';
+import 'screens/editservice_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/newclient_screen.dart';
+import 'screens/newservice_screen.dart';
 import 'screens/services_screen.dart';
 import 'servicos/agendamentos_servico.dart';
 import 'servicos/autenticacao_servico.dart';
@@ -66,6 +68,8 @@ class SalonSchedulerApp extends StatelessWidget {
           ServicesScreen.routeName: (context) => const ServicesScreen(),
           NewClientScreen.routeName: (context) => const NewClientScreen(),
           EditClientScreen.routeName: (context) => const EditClientScreen(),
+          NewServiceScreen.routeName: (context) => const NewServiceScreen(),
+          EditServiceScreen.routeName: (context) => const EditServiceScreen(),
           NewAppointmentScreen.routeName: (context) => const NewAppointmentScreen(),
           HistoryScreen.routeName: (context) => const HistoryScreen(),
         },
