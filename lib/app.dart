@@ -78,6 +78,7 @@ class SalonSchedulerApp extends StatelessWidget {
   ThemeData _buildTheme() {
     final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFFEC8C8));
     final textTheme = GoogleFonts.openSansTextTheme();
+    const buttonColor = Color(0xFFCF7072);
     return ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
@@ -93,9 +94,32 @@ class SalonSchedulerApp extends StatelessWidget {
           color: scheme.onSurface,
         ),
       ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: scheme.primary,
-        foregroundColor: scheme.onPrimary,
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: buttonColor,
+        foregroundColor: Colors.white,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: buttonColor,
+          foregroundColor: Colors.white,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: buttonColor,
+          foregroundColor: Colors.white,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: buttonColor,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: buttonColor,
+          side: const BorderSide(color: buttonColor),
+        ),
       ),
       dividerColor: scheme.outlineVariant,
     );
