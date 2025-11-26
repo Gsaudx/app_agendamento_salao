@@ -18,7 +18,6 @@ class ClientsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final clientesServico = DependenciasWidget.clientesDe(context);
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
       appBar: const AppBarPadrao(),
       body: StreamBuilder<List<Cliente>>(
         stream: clientesServico.observarClientes(),

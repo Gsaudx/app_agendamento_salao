@@ -82,7 +82,7 @@ class SalonSchedulerApp extends StatelessWidget {
       colorScheme: scheme,
       useMaterial3: true,
       textTheme: textTheme,
-      scaffoldBackgroundColor: scheme.surface,
+      scaffoldBackgroundColor: Colors.white,
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,

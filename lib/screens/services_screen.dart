@@ -273,7 +273,6 @@ class ServicesScreen extends StatelessWidget {
     final formatadorMoeda = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
       appBar: const AppBarPadrao(),
       body: StreamBuilder<List<Servico>>(
         stream: servicosServico.observarServicos(),

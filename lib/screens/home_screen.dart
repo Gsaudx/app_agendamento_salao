@@ -90,7 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final tema = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: tema.colorScheme.surfaceVariant,
       appBar: AppBarPadrao(
         onLogout: () => _sair(context),
       ),
