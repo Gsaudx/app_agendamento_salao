@@ -1,7 +1,7 @@
 import 'package:app_paula_barros/screens/history_screen.dart';
 import 'package:app_paula_barros/screens/newappointmens_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:web/web.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'dependencias/dependencias_widget.dart';
 import 'screens/appointments_screen.dart';
@@ -77,14 +77,21 @@ class SalonSchedulerApp extends StatelessWidget {
 
   ThemeData _buildTheme() {
     final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFFEC8C8));
+    final textTheme = GoogleFonts.openSansTextTheme();
     return ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
+      textTheme: textTheme,
       scaffoldBackgroundColor: scheme.surface,
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
         elevation: 0,
+        titleTextStyle: GoogleFonts.openSans(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: scheme.onSurface,
+        ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.primary,
