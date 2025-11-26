@@ -15,6 +15,7 @@ import 'servicos/agendamentos_servico.dart';
 import 'servicos/autenticacao_servico.dart';
 import 'servicos/clientes_servico.dart';
 import 'servicos/servicos_servico.dart';
+import 'servicos/storage_servico.dart';
 
 class SalonSchedulerApp extends StatelessWidget {
   const SalonSchedulerApp({
@@ -23,15 +24,18 @@ class SalonSchedulerApp extends StatelessWidget {
     ClientesServico? clientesServico,
     ServicosServico? servicosServico,
     AgendamentosServico? agendamentosServico,
+    StorageServico? storageServico,
   }) : _autenticacaoServico = autenticacaoServico,
        _clientesServico = clientesServico,
        _servicosServico = servicosServico,
-       _agendamentosServico = agendamentosServico;
+       _agendamentosServico = agendamentosServico,
+       _storageServico = storageServico;
 
   final AutenticacaoServico? _autenticacaoServico;
   final ClientesServico? _clientesServico;
   final ServicosServico? _servicosServico;
   final AgendamentosServico? _agendamentosServico;
+  final StorageServico? _storageServico;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +43,7 @@ class SalonSchedulerApp extends StatelessWidget {
     final clientesServico = _clientesServico ?? ClientesServico();
     final servicosServico = _servicosServico ?? ServicosServico();
     final agendamentosServico = _agendamentosServico ?? AgendamentosServico();
+    final storageServico = _storageServico ?? StorageServico();
     final rotaInicial = autenticacao.usuarioAtual != null
         ? HomeScreen.routeName
         : LoginScreen.routeName;
@@ -48,6 +53,7 @@ class SalonSchedulerApp extends StatelessWidget {
       clientes: clientesServico,
       servicos: servicosServico,
       agendamentos: agendamentosServico,
+      storage: storageServico,
       child: MaterialApp(
         title: 'Salão Paula Barros',
         theme: _buildTheme(),

@@ -4,6 +4,7 @@ import '../servicos/agendamentos_servico.dart';
 import '../servicos/autenticacao_servico.dart';
 import '../servicos/clientes_servico.dart';
 import '../servicos/servicos_servico.dart';
+import '../servicos/storage_servico.dart';
 
 class DependenciasWidget extends InheritedWidget {
   const DependenciasWidget({
@@ -13,12 +14,14 @@ class DependenciasWidget extends InheritedWidget {
     required this.clientes,
     required this.servicos,
     required this.agendamentos,
+    required this.storage,
   });
 
   final AutenticacaoServico autenticacao;
   final ClientesServico clientes;
   final ServicosServico servicos;
   final AgendamentosServico agendamentos;
+  final StorageServico storage;
 
   static AutenticacaoServico autenticacaoDe(BuildContext context) {
     final dependencias = context
@@ -58,6 +61,16 @@ class DependenciasWidget extends InheritedWidget {
       'DependenciasWidget não encontrado no contexto.',
     );
     return dependencias!.agendamentos;
+  }
+
+  static StorageServico storageDe(BuildContext context) {
+    final dependencias = context
+        .dependOnInheritedWidgetOfExactType<DependenciasWidget>();
+    assert(
+      dependencias != null,
+      'DependenciasWidget não encontrado no contexto.',
+    );
+    return dependencias!.storage;
   }
 
   @override
