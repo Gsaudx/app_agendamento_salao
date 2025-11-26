@@ -45,6 +45,39 @@ class AgendamentosServico {
         );
   }
 
+  Stream<List<Agendamento>> observarHistorico({
+    DateTime? inicio,
+    DateTime? fim,
+    String? clienteId,
+  }) {
+    Query<Map<String, dynamic>> consulta = _colecao;
+
+    if (clienteId != null) {
+      consulta = consulta.where('clienteId', isEqualTo: clienteId);
+    }
+
+    if (inicio != null) {
+      consulta = consulta.where(
+        'inicio',
+        isGreaterThanOrEqualTo: Timestamp.fromDate(inicio),
+      );
+    }
+
+    if (fim != null) {
+      final fimAjustado = DateTime(fim.year, fim.month, fim.day, 23, 59, 59);
+      consulta = consulta.where(
+        'inicio',
+        isLessThanOrEqualTo: Timestamp.fromDate(fimAjustado),
+      );
+    }
+
+    consulta = consulta.orderBy('inicio', descending: true);
+
+    return consulta.snapshots().map(
+      (snapshot) => snapshot.docs.map(Agendamento.fromDocument).toList(),
+    );
+  }
+
   Future<Agendamento?> verificarConflito({
     required DateTime inicio,
     required DateTime fim,
