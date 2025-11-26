@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../components/app_bar_padrao.dart';
 import '../components/floating_menu.dart';
 import '../dependencias/dependencias_widget.dart';
 import '../modelos/agendamento.dart';
@@ -26,19 +27,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final clientesServico = DependenciasWidget.clientesDe(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Histórico',
-          style: TextStyle(
-            color: Color(0xFF5D4037), // Brownish color from image
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Color(0xFF5D4037)),
-      ),
+      appBar: const AppBarPadrao(),
       body: Column(
         children: [
           // Filters Section

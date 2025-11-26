@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
 
+import '../components/app_bar_padrao.dart';
 import '../components/Input.dart';
 import '../components/floating_menu.dart';
 import '../components/select.dart';
@@ -273,21 +274,7 @@ class ServicesScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-      appBar: AppBar(
-        title: const Text('Serviços'),
-        backgroundColor: const Color.fromARGB(255, 252, 218, 218),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: IconButton(
-              onPressed: () {
-                _openServiceDialog(context);
-              },
-              icon: const Icon(Icons.add),
-            ),
-          ),
-        ],
-      ),
+      appBar: const AppBarPadrao(),
       body: StreamBuilder<List<Servico>>(
         stream: servicosServico.observarServicos(),
         builder: (context, snapshot) {

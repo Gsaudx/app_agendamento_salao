@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:app_paula_barros/screens/newappointmens_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import '../components/app_bar_padrao.dart';
 import '../components/floating_menu.dart';
 import '../dependencias/dependencias_widget.dart';
 import '../modelos/agendamento.dart';
@@ -87,22 +87,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final usuario = _autenticacao.usuarioAtual;
-    final saudacao = _nomeParaSaudacao(usuario);
     final tema = Theme.of(context);
 
     return Scaffold(
       backgroundColor: tema.colorScheme.surfaceVariant,
-      appBar: AppBar(
-        title: const Text('Agenda do Salão'),
-        backgroundColor: const Color.fromARGB(255, 252, 218, 218),
-        actions: [
-          IconButton(
-            tooltip: 'Sair',
-            onPressed: () => _sair(context),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
+      appBar: AppBarPadrao(
+        onLogout: () => _sair(context),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -150,18 +140,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Bem-vindo(a), $saudacao!',
-                        style: tema.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Controle seus agendamentos com facilidade.',
-                        style: tema.textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 16),
                       TextField(
                         controller: _buscaController,
                         onChanged: _onBuscaAlterada,
@@ -681,30 +659,4 @@ class _VisaoCalendario {
   static const dia = 'dia';
   static const semana = 'semana';
   static const mes = 'mes';
-}
-
-String _nomeParaSaudacao(User? usuario) {
-  final displayName = usuario?.displayName?.trim();
-  if (displayName != null && displayName.isNotEmpty) {
-    return _capitalizarCadaPalavra(displayName);
-  }
-
-  final email = usuario?.email;
-  if (email != null && email.isNotEmpty) {
-    final localPart = email.split('@').first.replaceAll(RegExp(r'[._]'), ' ');
-    return _capitalizarCadaPalavra(localPart);
-  }
-
-  return 'por aqui';
-}
-
-String _capitalizarCadaPalavra(String texto) {
-  final palavras = texto.split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-  return palavras
-      .map(
-        (palavra) => palavra.length == 1
-            ? palavra.toUpperCase()
-            : '${palavra[0].toUpperCase()}${palavra.substring(1).toLowerCase()}',
-      )
-      .join(' ');
 }

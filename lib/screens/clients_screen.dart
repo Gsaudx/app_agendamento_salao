@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../components/app_bar_padrao.dart';
 import '../components/floating_button.dart';
 import '../components/floating_menu.dart';
 import '../dependencias/dependencias_widget.dart';
@@ -18,10 +19,7 @@ class ClientsScreen extends StatelessWidget {
     final clientesServico = DependenciasWidget.clientesDe(context);
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-      appBar: AppBar(
-        title: const Text('Clientes'),
-        backgroundColor: const Color.fromARGB(255, 252, 218, 218),
-      ),
+      appBar: const AppBarPadrao(),
       body: StreamBuilder<List<Cliente>>(
         stream: clientesServico.observarClientes(),
         builder: (context, snapshot) {
