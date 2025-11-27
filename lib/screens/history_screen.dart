@@ -19,6 +19,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   DateTime? _dataInicial;
   DateTime? _dataFinal;
   Cliente? _clienteSelecionado;
+  bool _filtrosDataExpandidos = false;
   final _currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
   @override
@@ -140,56 +141,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 16),
-                // Date Range
-                Row(
-                  children: [
-                    const Text(
-                      'Período: ',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _DateFilterButton(
-                        label: 'Inicial',
-                        selectedDate: _dataInicial,
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _dataInicial ?? DateTime.now(),
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null) {
-                            setState(() {
-                              _dataInicial = picked;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _DateFilterButton(
-                        label: 'Final',
-                        selectedDate: _dataFinal,
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _dataFinal ?? DateTime.now(),
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null) {
-                            setState(() {
-                              _dataFinal = picked;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 12),
+                // Filtros de Data - Expansível
+                _buildFiltrosDataExpansiveis(),
               ],
             ),
           ),
@@ -742,46 +696,274 @@ class _HistoryScreenState extends State<HistoryScreen> {
       },
     );
   }
-}
 
-class _DateFilterButton extends StatelessWidget {
-  final String label;
-  final DateTime? selectedDate;
-  final VoidCallback onTap;
-
-  const _DateFilterButton({
-    required this.label,
-    required this.selectedDate,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.grey[300]!),
+  Widget _buildFiltrosDataExpansiveis() {
+    final temFiltroData = _dataInicial != null || _dataFinal != null;
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: temFiltroData ? const Color(0xFFCF7072).withOpacity(0.3) : Colors.grey.shade200,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              selectedDate != null
-                  ? DateFormat('dd/MM/yyyy').format(selectedDate!)
-                  : label,
-              style: TextStyle(
-                color: selectedDate != null ? Colors.black : Colors.grey,
+      ),
+      child: Column(
+        children: [
+          // Cabeçalho clicável
+          InkWell(
+            onTap: () {
+              setState(() {
+                _filtrosDataExpandidos = !_filtrosDataExpandidos;
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.date_range,
+                    size: 20,
+                    color: temFiltroData ? const Color(0xFFCF7072) : Colors.grey[600],
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      temFiltroData 
+                          ? _formatarPeriodoSelecionado()
+                          : 'Filtrar por período',
+                      style: TextStyle(
+                        color: temFiltroData ? Colors.black87 : Colors.grey[600],
+                        fontWeight: temFiltroData ? FontWeight.w500 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  if (temFiltroData)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _dataInicial = null;
+                          _dataFinal = null;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: _filtrosDataExpandidos ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+          ),
+          // Conteúdo expansível
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                children: [
+                  const Divider(height: 1),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildCampoData(
+                          label: 'Data inicial',
+                          data: _dataInicial,
+                          onTap: () => _selecionarData(isInicial: true),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Icon(
+                          Icons.arrow_forward,
+                          size: 20,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildCampoData(
+                          label: 'Data final',
+                          data: _dataFinal,
+                          onTap: () => _selecionarData(isInicial: false),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Atalhos rápidos
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildAtalhoRapido('Hoje', () {
+                          final hoje = DateTime.now();
+                          setState(() {
+                            _dataInicial = DateTime(hoje.year, hoje.month, hoje.day);
+                            _dataFinal = DateTime(hoje.year, hoje.month, hoje.day, 23, 59, 59);
+                          });
+                        }),
+                        const SizedBox(width: 8),
+                        _buildAtalhoRapido('Esta semana', () {
+                          final hoje = DateTime.now();
+                          final inicioSemana = hoje.subtract(Duration(days: hoje.weekday - 1));
+                          setState(() {
+                            _dataInicial = DateTime(inicioSemana.year, inicioSemana.month, inicioSemana.day);
+                            _dataFinal = hoje;
+                          });
+                        }),
+                        const SizedBox(width: 8),
+                        _buildAtalhoRapido('Este mês', () {
+                          final hoje = DateTime.now();
+                          setState(() {
+                            _dataInicial = DateTime(hoje.year, hoje.month, 1);
+                            _dataFinal = hoje;
+                          });
+                        }),
+                        const SizedBox(width: 8),
+                        _buildAtalhoRapido('Último mês', () {
+                          final hoje = DateTime.now();
+                          final mesPassado = DateTime(hoje.year, hoje.month - 1, 1);
+                          final fimMesPassado = DateTime(hoje.year, hoje.month, 0);
+                          setState(() {
+                            _dataInicial = mesPassado;
+                            _dataFinal = fimMesPassado;
+                          });
+                        }),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            crossFadeState: _filtrosDataExpandidos 
+                ? CrossFadeState.showSecond 
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCampoData({
+    required String label,
+    required DateTime? data,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: data != null ? const Color(0xFFCF7072).withOpacity(0.5) : Colors.grey.shade300,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.calendar_today,
+              size: 16,
+              color: data != null ? const Color(0xFFCF7072) : Colors.grey[400],
+            ),
+            const SizedBox(width: 8),
+            Text(
+              data != null 
+                  ? DateFormat('dd/MM/yyyy').format(data)
+                  : label,
+              style: TextStyle(
+                color: data != null ? Colors.black87 : Colors.grey[500],
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildAtalhoRapido(String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEC8C8).withOpacity(0.5),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Color(0xFFCF7072),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatarPeriodoSelecionado() {
+    final formato = DateFormat('dd/MM/yyyy');
+    if (_dataInicial != null && _dataFinal != null) {
+      return '${formato.format(_dataInicial!)} - ${formato.format(_dataFinal!)}';
+    } else if (_dataInicial != null) {
+      return 'A partir de ${formato.format(_dataInicial!)}';
+    } else if (_dataFinal != null) {
+      return 'Até ${formato.format(_dataFinal!)}';
+    }
+    return '';
+  }
+
+  Future<void> _selecionarData({required bool isInicial}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isInicial 
+          ? (_dataInicial ?? DateTime.now())
+          : (_dataFinal ?? DateTime.now()),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFCF7072),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        if (isInicial) {
+          _dataInicial = picked;
+        } else {
+          _dataFinal = picked;
+        }
+      });
+    }
   }
 }
