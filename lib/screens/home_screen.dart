@@ -23,10 +23,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late final AgendamentosServico _agendamentosServico;
   final String _termoBusca = '';
-  CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateUtils.dateOnly(DateTime.now());
-  String _visaoSelecionada = _VisaoCalendario.mes;
   bool _diaExpandido = false;
   final ScrollController _scrollController = ScrollController();
 
@@ -113,123 +111,108 @@ class _HomeScreenState extends State<HomeScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final alturaTotal = constraints.maxHeight;
-        const alturaSeletor = 48.0;
-        const espacoEntreSeletorECalendario = 16.0;
-        final alturaCalendario = alturaTotal - alturaSeletor - espacoEntreSeletorECalendario;
         
         const alturaCabecalho = 50.0;
         const alturaDiasSemana = 24.0;
-        final linhasCalendario = _calendarFormat == CalendarFormat.month ? 6 : 1;
-        final alturaCorpo = alturaCalendario - alturaCabecalho - alturaDiasSemana;
+        const linhasCalendario = 6;
+        final alturaCorpo = alturaTotal - alturaCabecalho - alturaDiasSemana;
         final rowHeight = (alturaCorpo / linhasCalendario).clamp(40.0, 90.0);
 
-        return Column(
-          children: [
-            _SegmentedPeriodSelector(
-              visaoSelecionada: _visaoSelecionada,
-              onChange: _alterarVisao,
+        return SizedBox(
+          height: alturaTotal,
+          child: TableCalendar<Agendamento>(
+            locale: 'pt_BR',
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2035, 12, 31),
+            focusedDay: _focusedDay,
+            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+            calendarFormat: CalendarFormat.month,
+            availableGestures: AvailableGestures.horizontalSwipe,
+            eventLoader: (day) =>
+                eventosPorDia[DateUtils.dateOnly(day)] ?? const [],
+            onDaySelected: (selected, focused) {
+              setState(() {
+                _selectedDay = DateUtils.dateOnly(selected);
+                _focusedDay = focused;
+                _diaExpandido = true;
+              });
+              _scrollParaHoraAtual();
+            },
+            calendarBuilders: CalendarBuilders(
+              markerBuilder: (context, day, events) {
+                if (events.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return _IndicadoresAgendamento(
+                  eventos: events.cast<Agendamento>(),
+                );
+              },
+              defaultBuilder: (context, day, focusedDay) {
+                final isWeekend = day.weekday == DateTime.saturday ||
+                    day.weekday == DateTime.sunday;
+                return _DiaCalendario(
+                  dia: day.day,
+                  corTexto:
+                      isWeekend ? const Color(0xFFCF7072) : Colors.black87,
+                );
+              },
+              todayBuilder: (context, day, focusedDay) {
+                final estaSelecionado = isSameDay(_selectedDay, day);
+                if (estaSelecionado) {
+                  return _DiaCalendario(
+                    dia: day.day,
+                    corFundo: const Color(0xFFCF7072),
+                    corTexto: Colors.white,
+                    negrito: true,
+                  );
+                }
+                return _DiaCalendario(
+                  dia: day.day,
+                  corTexto: const Color(0xFFCF7072),
+                  negrito: true,
+                );
+              },
+              selectedBuilder: (context, day, focusedDay) {
+                return _DiaCalendario(
+                  dia: day.day,
+                  corFundo: const Color(0xFFCF7072),
+                  corTexto: Colors.white,
+                  negrito: true,
+                );
+              },
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: alturaCalendario,
-              child: TableCalendar<Agendamento>(
-                locale: 'pt_BR',
-                firstDay: DateTime.utc(2020, 1, 1),
-                lastDay: DateTime.utc(2035, 12, 31),
-                focusedDay: _focusedDay,
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                calendarFormat: _calendarFormat,
-                availableGestures: AvailableGestures.horizontalSwipe,
-                eventLoader: (day) =>
-                    eventosPorDia[DateUtils.dateOnly(day)] ?? const [],
-                onDaySelected: (selected, focused) {
-                  setState(() {
-                    _selectedDay = DateUtils.dateOnly(selected);
-                    _focusedDay = focused;
-                    _diaExpandido = true;
-                  });
-                  _scrollParaHoraAtual();
-                },
-                onFormatChanged: (format) {
-                  setState(() => _calendarFormat = format);
-                },
-                calendarBuilders: CalendarBuilders(
-                  markerBuilder: (context, day, events) {
-                    if (events.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
-                    return _IndicadoresAgendamento(
-                      eventos: events.cast<Agendamento>(),
-                    );
-                  },
-                  defaultBuilder: (context, day, focusedDay) {
-                    final isWeekend = day.weekday == DateTime.saturday ||
-                        day.weekday == DateTime.sunday;
-                    return _DiaCalendario(
-                      dia: day.day,
-                      corTexto:
-                          isWeekend ? const Color(0xFFCF7072) : Colors.black87,
-                    );
-                  },
-                  todayBuilder: (context, day, focusedDay) {
-                    final estaSelecionado = isSameDay(_selectedDay, day);
-                    if (estaSelecionado) {
-                      return _DiaCalendario(
-                        dia: day.day,
-                        corFundo: const Color(0xFFCF7072),
-                        corTexto: Colors.white,
-                        negrito: true,
-                      );
-                    }
-                    return _DiaCalendario(
-                      dia: day.day,
-                      corTexto: const Color(0xFFCF7072),
-                      negrito: true,
-                    );
-                  },
-                  selectedBuilder: (context, day, focusedDay) {
-                    return _DiaCalendario(
-                      dia: day.day,
-                      corFundo: const Color(0xFFCF7072),
-                      corTexto: Colors.white,
-                      negrito: true,
-                    );
-                  },
-                ),
-                headerStyle: HeaderStyle(
-                  formatButtonVisible: false,
-                  titleCentered: true,
-                  headerPadding: const EdgeInsets.only(bottom: 8),
-                  titleTextFormatter: (date, locale) =>
-                      DateFormat.yMMMM('pt_BR').format(date),
-                  titleTextStyle: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  leftChevronIcon: const Icon(Icons.chevron_left, size: 28),
-                  rightChevronIcon: const Icon(Icons.chevron_right, size: 28),
-                ),
-                daysOfWeekStyle: const DaysOfWeekStyle(
-                  weekdayStyle: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  weekendStyle: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFFCF7072),
-                  ),
-                ),
-                daysOfWeekHeight: 24,
-                rowHeight: rowHeight,
-                calendarStyle: const CalendarStyle(
-                  outsideDaysVisible: false,
-                  tablePadding: EdgeInsets.zero,
-                  cellMargin: EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-                ),
+            headerStyle: HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+              headerPadding: const EdgeInsets.only(bottom: 8),
+              titleTextFormatter: (date, locale) =>
+                  DateFormat.yMMMM('pt_BR').format(date),
+              titleTextStyle: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+              leftChevronIcon: const Icon(Icons.chevron_left, size: 28),
+              rightChevronIcon: const Icon(Icons.chevron_right, size: 28),
+            ),
+            daysOfWeekStyle: const DaysOfWeekStyle(
+              weekdayStyle: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+              weekendStyle: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFFCF7072),
               ),
             ),
-          ],
+            daysOfWeekHeight: 24,
+            rowHeight: rowHeight,
+            calendarStyle: const CalendarStyle(
+              outsideDaysVisible: false,
+              tablePadding: EdgeInsets.zero,
+              cellMargin: EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+            ),
+          ),
         );
       },
     );
@@ -364,19 +347,6 @@ class _HomeScreenState extends State<HomeScreen> {
           servicos.contains(termo) ||
           observacoes.contains(termo);
     }).toList();
-  }
-
-  void _alterarVisao(String visao) {
-    setState(() {
-      _visaoSelecionada = visao;
-      switch (visao) {
-        case _VisaoCalendario.semana:
-          _calendarFormat = CalendarFormat.week;
-          break;
-        default:
-          _calendarFormat = CalendarFormat.month;
-      }
-    });
   }
 
   void _abrirNovoAgendamento() {
@@ -682,40 +652,6 @@ class _IndicadoresAgendamento extends StatelessWidget {
   }
 }
 
-class _SegmentedPeriodSelector extends StatelessWidget {
-  const _SegmentedPeriodSelector({
-    required this.visaoSelecionada,
-    required this.onChange,
-  });
-
-  final String visaoSelecionada;
-  final ValueChanged<String> onChange;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: SegmentedButton<String>(
-        segments: const [
-          ButtonSegment(value: _VisaoCalendario.semana, label: Text('Semana')),
-          ButtonSegment(value: _VisaoCalendario.mes, label: Text('Mês')),
-        ],
-        selected: <String>{visaoSelecionada},
-        onSelectionChanged: (selecionados) {
-          if (selecionados.isNotEmpty) {
-            onChange(selecionados.first);
-          }
-        },
-      ),
-    );
-  }
-}
-
-class _VisaoCalendario {
-  static const semana = 'semana';
-  static const mes = 'mes';
-}
-
 class _DiaCalendario extends StatelessWidget {
   const _DiaCalendario({
     required this.dia,
@@ -731,26 +667,34 @@ class _DiaCalendario extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Container(
-          width: 32,
-          height: 32,
-          decoration: corFundo != null
-              ? BoxDecoration(
-                  color: corFundo,
-                  shape: BoxShape.circle,
-                )
-              : null,
-          alignment: Alignment.center,
-          child: Text(
-            '$dia',
-            style: TextStyle(
-              color: corTexto,
-              fontSize: 15,
-              fontWeight: negrito ? FontWeight.bold : FontWeight.normal,
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 0.5,
+        ),
+      ),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Container(
+            width: 26,
+            height: 26,
+            decoration: corFundo != null
+                ? BoxDecoration(
+                    color: corFundo,
+                    shape: BoxShape.circle,
+                  )
+                : null,
+            alignment: Alignment.center,
+            child: Text(
+              '$dia',
+              style: TextStyle(
+                color: corTexto,
+                fontSize: 14,
+                fontWeight: negrito ? FontWeight.bold : FontWeight.normal,
+              ),
             ),
           ),
         ),
