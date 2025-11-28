@@ -28,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime _selectedDay = DateUtils.dateOnly(DateTime.now());
   bool _diaExpandido = false;
   final ScrollController _scrollController = ScrollController();
+  Map<DateTime, List<Agendamento>> _eventosPorDia = {};
 
   @override
   void didChangeDependencies() {
@@ -74,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
             final agendamentos = snapshot.data ?? const <Agendamento>[];
             final eventosPorDia = _organizarPorDia(agendamentos);
+            _eventosPorDia = eventosPorDia;
             final selecionados =
                 eventosPorDia[_selectedDay] ?? const <Agendamento>[];
             final filtrados = _aplicarFiltro(selecionados);
@@ -350,10 +352,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _abrirNovoAgendamento() {
     final dia = _selectedDay;
-    final agora = TimeOfDay.now();
-    final horaInicial = DateUtils.isSameDay(dia, DateTime.now())
-        ? _alinharParaGrade(agora)
-        : const TimeOfDay(hour: 9, minute: 0);
+    final agendamentosDoDia = _eventosPorDia[dia] ?? <Agendamento>[];
+    
+    TimeOfDay horaInicial;
+    
+    if (agendamentosDoDia.isNotEmpty) {
+      // Ordena por horário e pega o último
+      final ordenados = List<Agendamento>.from(agendamentosDoDia)
+        ..sort((a, b) => a.inicio.compareTo(b.inicio));
+      final ultimo = ordenados.last;
+      final fimUltimo = ultimo.fim ?? 
+          ultimo.inicio.add(Duration(minutes: ultimo.duracaoMinutos));
+      horaInicial = TimeOfDay(hour: fimUltimo.hour, minute: fimUltimo.minute);
+      // Alinha para a grade de 15 minutos
+      horaInicial = _alinharParaGrade(horaInicial);
+    } else if (DateUtils.isSameDay(dia, DateTime.now())) {
+      // Dia atual sem agendamentos - usa hora atual
+      horaInicial = _alinharParaGrade(TimeOfDay.now());
+    } else {
+      // Outro dia sem agendamentos - começa às 9h
+      horaInicial = const TimeOfDay(hour: 9, minute: 0);
+    }
+    
     Navigator.pushNamed(
       context,
       NewAppointmentScreen.routeName,
@@ -552,29 +572,93 @@ class _IndicadoresAgendamento extends StatelessWidget {
   Widget build(BuildContext context) {
     if (eventos.isEmpty) return const SizedBox.shrink();
 
-    // Mostra no máximo 3 pontos indicadores
-    final quantidadeVisiveis = eventos.length.clamp(1, 3);
-    
-    return Positioned(
-      bottom: 4,
-      left: 0,
-      right: 0,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(quantidadeVisiveis, (index) {
-          final cor = _cores[index % _cores.length];
-          return Container(
-            width: 6,
-            height: 6,
-            margin: const EdgeInsets.symmetric(horizontal: 1),
-            decoration: BoxDecoration(
-              color: cor,
-              shape: BoxShape.circle,
-            ),
-          );
-        }),
-      ),
+    // Ordena por horário
+    final eventosOrdenados = List<Agendamento>.from(eventos)
+      ..sort((a, b) => a.inicio.compareTo(b.inicio));
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final alturaTotal = constraints.maxHeight;
+        const alturaNumeroDia = 28.0;
+        final alturaDisponivel = alturaTotal - alturaNumeroDia - 2;
+        
+        if (alturaDisponivel <= 0) return const SizedBox.shrink();
+        
+        // Calcula quantos retângulos cabem (cada um = 12px + 2px margin)
+        const alturaRetangulo = 12.0;
+        const margemRetangulo = 2.0;
+        const alturaIndicadorExtra = 10.0;
+        
+        final espacoParaRetangulos = alturaDisponivel - alturaIndicadorExtra;
+        final maxRetangulosPossiveis = (espacoParaRetangulos / (alturaRetangulo + margemRetangulo)).floor();
+        final maxRetangulos = maxRetangulosPossiveis.clamp(1, 3);
+        
+        final eventosVisiveis = eventosOrdenados.take(maxRetangulos).toList();
+        final restantes = eventosOrdenados.length - maxRetangulos;
+
+        return Padding(
+          padding: EdgeInsets.only(top: alturaNumeroDia, left: 2, right: 2, bottom: 2),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ...eventosVisiveis.asMap().entries.map((entry) {
+                final index = entry.key;
+                final evento = entry.value;
+                final cor = _cores[index % _cores.length];
+                return Container(
+                  height: alturaRetangulo,
+                  margin: const EdgeInsets.only(bottom: margemRetangulo),
+                  decoration: BoxDecoration(
+                    color: cor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [cor, cor, cor.withOpacity(0)],
+                        stops: const [0.0, 0.7, 1.0],
+                      ).createShader(bounds),
+                      blendMode: BlendMode.dstIn,
+                      child: Container(
+                        color: cor,
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          evento.clienteNome,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w500,
+                            height: 1.0,
+                          ),
+                          overflow: TextOverflow.clip,
+                          maxLines: 1,
+                          softWrap: false,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              if (restantes > 0)
+                Text(
+                  '+$restantes',
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                    height: 1.0,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
