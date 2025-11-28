@@ -25,6 +25,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
   final Map<String, GlobalKey> _chavesDasSecoes = {};
   String _filtro = '';
   String _letraAtual = '';
+  Stream<List<Cliente>>? _clientesStream;
 
   static const _alfabeto = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -35,6 +36,12 @@ class _ClientsScreenState extends State<ClientsScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_atualizarLetraAtual);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _clientesStream ??= DependenciasWidget.clientesDe(context).observarClientes();
   }
 
   @override
@@ -110,7 +117,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final clientesServico = DependenciasWidget.clientesDe(context);
     return Scaffold(
       appBar: const AppBarPadrao(),
       body: Column(
@@ -118,7 +124,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
           _buildCampoBusca(),
           Expanded(
             child: StreamBuilder<List<Cliente>>(
-              stream: clientesServico.observarClientes(),
+              stream: _clientesStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
