@@ -31,19 +31,6 @@ class _EditServiceScreenState extends State<EditServiceScreen> {
     15, 20, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240, 270
   ];
 
-  static const _iconesDecorativos = <IconData>[
-    Icons.content_cut,
-    Icons.spa,
-    Icons.face_retouching_natural,
-    Icons.brush,
-    Icons.auto_fix_high,
-    Icons.dry_cleaning,
-    Icons.palette,
-    Icons.wash,
-    Icons.star_outline,
-    Icons.local_florist,
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -151,118 +138,52 @@ class _EditServiceScreenState extends State<EditServiceScreen> {
         titulo: 'Editar Serviço',
         icone: Icons.content_cut_rounded,
       ),
-      body: Stack(
+      body: Column(
         children: [
-          Positioned.fill(
-            child: _buildIconesDecorativos(),
-          ),
-          Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16.0),
-                  children: [
-                    Input(
-                      label: 'Nome',
-                      controller: _nomeController,
-                      placeholder: 'Digite o nome do serviço',
-                    ),
-                    Select<int>(
-                      label: 'Duração',
-                      placeholder: 'Selecione a duração',
-                      items: _duracoesDisponiveis,
-                      value: _duracaoSelecionada,
-                      onChanged: (valor) =>
-                          setState(() => _duracaoSelecionada = valor),
-                      itemLabel: (valor) => _formatarDuracao(valor),
-                    ),
-                    Input(
-                      label: 'Preço',
-                      controller: _precoController,
-                      placeholder: '0,00',
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: [MoedaInputFormatter()],
-                      prefixText: 'R\$ ',
-                    ),
-                    Textarea(
-                      label: 'Descrição (opcional)',
-                      controller: _descricaoController,
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 20),
-                    Button(
-                      label: 'Salvar',
-                      onPressed: _salvando ? null : _salvarServico,
-                      loading: _salvando,
-                    ),
-                  ],
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                Input(
+                  label: 'Nome',
+                  controller: _nomeController,
+                  placeholder: 'Digite o nome do serviço',
                 ),
-              ),
-            ],
+                Select<int>(
+                  label: 'Duração',
+                  placeholder: 'Selecione a duração',
+                  items: _duracoesDisponiveis,
+                  value: _duracaoSelecionada,
+                  onChanged: (valor) =>
+                      setState(() => _duracaoSelecionada = valor),
+                  itemLabel: (valor) => _formatarDuracao(valor),
+                ),
+                Input(
+                  label: 'Preço',
+                  controller: _precoController,
+                  placeholder: '0,00',
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [MoedaInputFormatter()],
+                  prefixText: 'R\$ ',
+                ),
+                Textarea(
+                  label: 'Descrição (opcional)',
+                  controller: _descricaoController,
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 20),
+                Button(
+                  label: 'Salvar',
+                  onPressed: _salvando ? null : _salvarServico,
+                  loading: _salvando,
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildIconesDecorativos() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final largura = constraints.maxWidth;
-        final altura = constraints.maxHeight;
-
-        final posicoes = <_PosicaoIcone>[
-          // Ícones na parte superior (atrás dos campos)
-          _PosicaoIcone(0, largura * 0.02, altura * 0.02, 36),
-          _PosicaoIcone(1, largura * 0.85, altura * 0.05, 32),
-          _PosicaoIcone(2, largura * 0.40, altura * 0.08, 34),
-          _PosicaoIcone(3, largura * 0.70, altura * 0.15, 38),
-          _PosicaoIcone(4, largura * 0.10, altura * 0.18, 30),
-          _PosicaoIcone(5, largura * 0.55, altura * 0.22, 36),
-          _PosicaoIcone(6, largura * 0.88, altura * 0.28, 32),
-          _PosicaoIcone(7, largura * 0.25, altura * 0.32, 34),
-          // Ícones na parte do meio
-          _PosicaoIcone(8, largura * 0.05, altura * 0.42, 38),
-          _PosicaoIcone(9, largura * 0.78, altura * 0.45, 36),
-          _PosicaoIcone(0, largura * 0.45, altura * 0.50, 32),
-          // Ícones na parte inferior
-          _PosicaoIcone(1, largura * 0.12, altura * 0.58, 40),
-          _PosicaoIcone(2, largura * 0.85, altura * 0.62, 34),
-          _PosicaoIcone(3, largura * 0.30, altura * 0.70, 38),
-          _PosicaoIcone(4, largura * 0.68, altura * 0.75, 36),
-          _PosicaoIcone(5, largura * 0.05, altura * 0.82, 32),
-          _PosicaoIcone(6, largura * 0.50, altura * 0.88, 40),
-          _PosicaoIcone(7, largura * 0.88, altura * 0.85, 34),
-        ];
-
-        return Stack(
-          children: posicoes.map((pos) {
-            return Positioned(
-              left: pos.x,
-              top: pos.y,
-              child: Transform.rotate(
-                angle: (pos.indice * 0.4) - 0.5,
-                child: Icon(
-                  _iconesDecorativos[pos.indice % _iconesDecorativos.length],
-                  size: pos.tamanho,
-                  color: const Color(0xFFCF7072).withOpacity(0.12),
-                ),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-}
-
-class _PosicaoIcone {
-  final int indice;
-  final double x;
-  final double y;
-  final double tamanho;
-
-  _PosicaoIcone(this.indice, this.x, this.y, this.tamanho);
 }
