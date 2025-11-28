@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "445326453635",
+    "project_id": "app-agendamento-salao",
+    "storage_bucket": "app-agendamento-salao.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:445326453635:android:d5f577b1c361b2728724b6",
+        "android_client_info": {
+          "package_name": "app.paula.barros.sha"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "445326453635-68l4qausf75rjks9alacqknlp4v4fssm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.paula.barros.sha",
+            "certificate_hash": "a47fc85da52b44ee32aa1abe3fa7dfc8006f9838"
+          }
+        },
+        {
+          "client_id": "445326453635-ch0rupp82iuqiii336c4m51uktjvjlfh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCKoaFcUvJ_sBLNDVWcGYssIknpCDOddw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "445326453635-ch0rupp82iuqiii336c4m51uktjvjlfh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
