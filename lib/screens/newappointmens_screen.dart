@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../components/app_bar_secundario.dart';
 import '../components/Input.dart';
 import '../components/button.dart';
+import '../components/dialog_confirmacao.dart';
 import '../components/input_date.dart';
 import '../components/input_textarea.dart';
 import '../components/select.dart';
@@ -134,9 +136,9 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 252, 218, 218),
-        title: Text(_modoEdicao ? 'Editar Agendamento' : 'Novo Agendamento'),
+      appBar: AppBarSecundario(
+        titulo: _modoEdicao ? 'Editar Agendamento' : 'Novo Agendamento',
+        icone: Icons.calendar_month_rounded,
       ),
       body: StreamBuilder<List<Cliente>>(
         stream: _clientesStream,
@@ -385,24 +387,15 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
             conflito.inicio.add(Duration(minutes: conflito.duracaoMinutos)),
       );
 
-      showDialog(
+      await DialogConfirmacao.mostrar(
         context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Conflito de Horário'),
-              content: Text(
-                'Já existe um agendamento neste horário:\n\n'
-                'Cliente: ${conflito.clienteNome}\n'
-                'Horário: $inicioConflito - $fimConflito\n'
-                'Serviços: ${conflito.descricaoServicos}',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Entendi'),
-                ),
-              ],
-            ),
+        titulo: 'Conflito de Horário',
+        mensagem: 'Já existe um agendamento neste horário:\n\n'
+            'Cliente: ${conflito.clienteNome}\n'
+            'Horário: $inicioConflito - $fimConflito\n'
+            'Serviços: ${conflito.descricaoServicos}',
+        tipo: TipoDialogo.alerta,
+        mostrarBotaoCancelar: false,
       );
       return;
     }

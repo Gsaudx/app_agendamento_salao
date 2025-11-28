@@ -11,6 +11,9 @@ class ClientesServico {
   CollectionReference<Map<String, dynamic>> get _colecao =>
       _firestore.collection('clients');
 
+  CollectionReference<Map<String, dynamic>> get _colecaoAgendamentos =>
+      _firestore.collection('appointments');
+
   Stream<List<Cliente>> observarClientes() {
     return _colecao
         .orderBy('nome')
@@ -74,5 +77,17 @@ class ClientesServico {
     } else {
       await _colecao.doc(id).update({'fotoUrl': FieldValue.delete()});
     }
+  }
+
+  Future<int> contarAgendamentosDoCliente(String clienteId) async {
+    final snapshot = await _colecaoAgendamentos
+        .where('clienteId', isEqualTo: clienteId)
+        .count()
+        .get();
+    return snapshot.count ?? 0;
+  }
+
+  Future<void> excluirCliente(String id) async {
+    await _colecao.doc(id).delete();
   }
 }

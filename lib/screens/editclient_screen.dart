@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../components/app_bar_secundario.dart';
 import '../components/button.dart';
 import '../components/foto_cliente_selector.dart';
 import '../components/Input.dart';
@@ -75,7 +76,10 @@ class _EditClientScreenState extends State<EditClientScreen> {
   Widget build(BuildContext context) {
     if (_cliente == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Editar Cliente')),
+        appBar: const AppBarSecundario(
+          titulo: 'Editar Cliente',
+          icone: Icons.person_outline_rounded,
+        ),
         body: const Center(
           child: Padding(
             padding: EdgeInsets.all(24),
@@ -85,7 +89,10 @@ class _EditClientScreenState extends State<EditClientScreen> {
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Editar Cliente')),
+      appBar: const AppBarSecundario(
+        titulo: 'Editar Cliente',
+        icone: Icons.person_outline_rounded,
+      ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

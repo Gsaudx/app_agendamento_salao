@@ -11,6 +11,9 @@ class ServicosServico {
   CollectionReference<Map<String, dynamic>> get _colecao =>
       _firestore.collection('services');
 
+  CollectionReference<Map<String, dynamic>> get _colecaoAgendamentos =>
+      _firestore.collection('appointments');
+
   Stream<List<Servico>> observarServicos() {
     return _colecao
         .where('ativo', isNotEqualTo: false)
@@ -52,5 +55,27 @@ class ServicosServico {
           : FieldValue.delete(),
       if (ativo != null) 'ativo': ativo,
     });
+  }
+
+  Future<int> contarAgendamentosComServico(String servicoId) async {
+    final snapshot = await _colecaoAgendamentos.get();
+    int contador = 0;
+    for (final doc in snapshot.docs) {
+      final dados = doc.data();
+      final servicos = dados['servicos'];
+      if (servicos is List) {
+        for (final servico in servicos) {
+          if (servico is Map && servico['id'] == servicoId) {
+            contador++;
+            break;
+          }
+        }
+      }
+    }
+    return contador;
+  }
+
+  Future<void> excluirServico(String id) async {
+    await _colecao.doc(id).delete();
   }
 }

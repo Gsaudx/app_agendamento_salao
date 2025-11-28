@@ -734,7 +734,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ? _formatarPeriodoSelecionado()
                           : 'Filtrar por período',
                       style: TextStyle(
-                        color: temFiltroData ? Colors.black87 : Colors.grey[600],
+                        color: Colors.black87,
                         fontWeight: temFiltroData ? FontWeight.w500 : FontWeight.normal,
                       ),
                     ),
@@ -792,7 +792,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         child: Icon(
                           Icons.arrow_forward,
                           size: 20,
-                          color: Colors.grey[400],
+                          color: Colors.black87,
                         ),
                       ),
                       Expanded(
@@ -890,7 +890,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ? DateFormat('dd/MM/yyyy').format(data)
                   : label,
               style: TextStyle(
-                color: data != null ? Colors.black87 : Colors.grey[500],
+                color: Colors.black87,
                 fontSize: 14,
               ),
             ),

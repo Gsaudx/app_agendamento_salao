@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../components/app_bar_padrao.dart';
+import '../components/dialog_confirmacao.dart';
 import '../components/floating_menu.dart';
 import '../dependencias/dependencias_widget.dart';
 import '../modelos/agendamento.dart';
@@ -384,30 +385,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _cancelarAgendamento(Agendamento agendamento) async {
     final formatadorData = DateFormat.yMMMMd('pt_BR');
     final formatadorHora = DateFormat.Hm('pt_BR');
-    final confirmado =
-        await showDialog<bool>(
-          context: context,
-          builder: (contextoDialogo) => AlertDialog(
-            title: const Text('Cancelar agendamento'),
-            content: Text(
-              'Deseja cancelar o agendamento de ${agendamento.clienteNome} em '
-              '${formatadorData.format(agendamento.inicio)} às '
-              '${formatadorHora.format(agendamento.inicio)}? Essa ação não '
-              'pode ser desfeita.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(contextoDialogo).pop(false),
-                child: const Text('Manter'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(contextoDialogo).pop(true),
-                child: const Text('Cancelar agendamento'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+    final confirmado = await DialogConfirmacao.mostrar(
+      context: context,
+      titulo: 'Cancelar agendamento',
+      mensagem: 'Deseja cancelar o agendamento de ${agendamento.clienteNome} em '
+          '${formatadorData.format(agendamento.inicio)} às '
+          '${formatadorHora.format(agendamento.inicio)}?\n\nEssa ação não pode ser desfeita.',
+      tipo: TipoDialogo.confirmacao,
+      textoBotaoConfirmar: 'Cancelar',
+      textoBotaoCancelar: 'Manter',
+    );
 
     if (!confirmado || !mounted) {
       return;
