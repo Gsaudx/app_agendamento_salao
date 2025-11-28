@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Card(
-                    color: const Color.fromARGB(255, 252, 218, 218),
+                    color: Colors.white,
                     elevation: 50,
                     child: Padding(
                       padding: const EdgeInsets.all(24),
