@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../components/app_bar_padrao.dart';
+import '../components/dialog_confirmacao.dart';
 import '../components/floating_button.dart';
 import '../components/floating_menu.dart';
 import '../dependencias/dependencias_widget.dart';
@@ -24,6 +25,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
   final Map<String, GlobalKey> _chavesDasSecoes = {};
   String _filtro = '';
   String _letraAtual = '';
+  Stream<List<Cliente>>? _clientesStream;
 
   static const _alfabeto = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -34,6 +36,12 @@ class _ClientsScreenState extends State<ClientsScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_atualizarLetraAtual);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _clientesStream ??= DependenciasWidget.clientesDe(context).observarClientes();
   }
 
   @override
@@ -109,7 +117,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final clientesServico = DependenciasWidget.clientesDe(context);
     return Scaffold(
       appBar: const AppBarPadrao(),
       body: Column(
@@ -117,7 +124,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
           _buildCampoBusca(),
           Expanded(
             child: StreamBuilder<List<Cliente>>(
-              stream: clientesServico.observarClientes(),
+              stream: _clientesStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -255,39 +262,58 @@ class _ClientsScreenState extends State<ClientsScreen> {
   }
 
   Widget _buildItemCliente(Cliente cliente) {
-    return InkWell(
-      onTap: () => _editarCliente(context, cliente),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            _buildFotoCliente(cliente),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    cliente.nome,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (cliente.telefone.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+    return Dismissible(
+      key: Key(cliente.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) async {
+        await _confirmarExclusaoCliente(context, cliente);
+        return false;
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        color: Colors.red,
+        child: const Icon(
+          Icons.delete_outline,
+          color: Colors.white,
+          size: 28,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => _editarCliente(context, cliente),
+        child: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              _buildFotoCliente(cliente),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      'Telefone: ${TelefoneInputFormatter.formatValue(cliente.telefone)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
+                      cliente.nome,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
+                    if (cliente.telefone.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Telefone: ${TelefoneInputFormatter.formatValue(cliente.telefone)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -426,6 +452,44 @@ class _ClientsScreenState extends State<ClientsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Dados do cliente atualizados.')),
       );
+    }
+  }
+
+  Future<void> _confirmarExclusaoCliente(BuildContext context, Cliente cliente) async {
+    final clientesServico = DependenciasWidget.clientesDe(context);
+    
+    final quantidadeAgendamentos = await clientesServico.contarAgendamentosDoCliente(cliente.id);
+    
+    if (quantidadeAgendamentos > 0) {
+      if (!context.mounted) return;
+      await DialogConfirmacao.mostrar(
+        context: context,
+        titulo: 'Não é possível excluir',
+        mensagem: 'O cliente "${cliente.nome}" possui $quantidadeAgendamentos '
+            '${quantidadeAgendamentos == 1 ? 'agendamento cadastrado' : 'agendamentos cadastrados'}.\n\n'
+            'Cancele os agendamentos antes de excluir o cliente.',
+        tipo: TipoDialogo.alerta,
+        mostrarBotaoCancelar: false,
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    final confirmado = await DialogConfirmacao.mostrar(
+      context: context,
+      titulo: 'Excluir cliente',
+      mensagem: 'Deseja realmente excluir o cliente "${cliente.nome}"?\n\nEssa ação não pode ser desfeita.',
+      tipo: TipoDialogo.exclusao,
+      textoBotaoConfirmar: 'Excluir',
+    );
+
+    if (confirmado && context.mounted) {
+      await clientesServico.excluirCliente(cliente.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cliente excluído com sucesso.')),
+        );
+      }
     }
   }
 }

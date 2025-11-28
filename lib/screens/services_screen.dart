@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../components/app_bar_padrao.dart';
+import '../components/dialog_confirmacao.dart';
 import '../components/floating_menu.dart';
 import '../modelos/servico.dart';
 import '../dependencias/dependencias_widget.dart';
@@ -142,6 +143,44 @@ class _ServicesScreenState extends State<ServicesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Serviço atualizado com sucesso.')),
       );
+    }
+  }
+
+  Future<void> _confirmarExclusaoServico(BuildContext context, Servico servico) async {
+    final servicosServico = DependenciasWidget.servicosDe(context);
+    
+    final quantidadeAgendamentos = await servicosServico.contarAgendamentosComServico(servico.id);
+    
+    if (quantidadeAgendamentos > 0) {
+      if (!context.mounted) return;
+      await DialogConfirmacao.mostrar(
+        context: context,
+        titulo: 'Não é possível excluir',
+        mensagem: 'O serviço "${servico.nome}" possui $quantidadeAgendamentos '
+            '${quantidadeAgendamentos == 1 ? 'agendamento associado' : 'agendamentos associados'}.\n\n'
+            'Cancele os agendamentos antes de excluir o serviço.',
+        tipo: TipoDialogo.alerta,
+        mostrarBotaoCancelar: false,
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    final confirmado = await DialogConfirmacao.mostrar(
+      context: context,
+      titulo: 'Excluir serviço',
+      mensagem: 'Deseja realmente excluir o serviço "${servico.nome}"?\n\nEssa ação não pode ser desfeita.',
+      tipo: TipoDialogo.exclusao,
+      textoBotaoConfirmar: 'Excluir',
+    );
+
+    if (confirmado && context.mounted) {
+      await servicosServico.excluirServico(servico.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Serviço excluído com sucesso.')),
+        );
+      }
     }
   }
 
@@ -304,95 +343,114 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final precoFormatado = formatadorMoeda.format(servico.preco);
     final icone = _obterIconeParaServico(servico);
 
-    return InkWell(
-      onTap: () => _editarServico(context, servico),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: Colors.grey[100]!,
-              width: 1,
+    return Dismissible(
+      key: Key(servico.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) async {
+        await _confirmarExclusaoServico(context, servico);
+        return false;
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        color: Colors.red,
+        child: const Icon(
+          Icons.delete_outline,
+          color: Colors.white,
+          size: 28,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => _editarServico(context, servico),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.grey[100]!,
+                width: 1,
+              ),
             ),
           ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEC8C8),
-                borderRadius: BorderRadius.circular(12),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEC8C8),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icone,
+                  color: const Color(0xFFCF7072),
+                  size: 24,
+                ),
               ),
-              child: Icon(
-                icone,
-                color: const Color(0xFFCF7072),
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    servico.nome,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.schedule,
-                        size: 14,
-                        color: Colors.grey[600],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      servico.nome,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        servico.duracaoFormatada,
-                        style: TextStyle(
-                          fontSize: 13,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          size: 14,
                           color: Colors.grey[600],
                         ),
-                      ),
-                      if (servico.descricao?.isNotEmpty == true) ...[
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            servico.descricao!,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[500],
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
+                        const SizedBox(width: 4),
+                        Text(
+                          servico.duracaoFormatada,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
                           ),
                         ),
+                        if (servico.descricao?.isNotEmpty == true) ...[
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              servico.descricao!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[500],
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              precoFormatado,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFFCF7072),
+              const SizedBox(width: 12),
+              Text(
+                precoFormatado,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFCF7072),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.grey[400],
-            ),
-          ],
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right,
+                color: Colors.grey[400],
+              ),
+            ],
+          ),
         ),
       ),
     );

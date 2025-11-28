@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../components/app_bar_secundario.dart';
 import '../components/button.dart';
 import '../components/Input.dart';
 import '../components/input_textarea.dart';
@@ -24,7 +25,7 @@ class _NewServiceScreenState extends State<NewServiceScreen> {
   bool _salvando = false;
 
   static const _duracoesDisponiveis = <int>[
-    15, 20, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240,
+    15, 20, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240, 270
   ];
 
   @override
@@ -90,7 +91,10 @@ class _NewServiceScreenState extends State<NewServiceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Novo Serviço')),
+      appBar: const AppBarSecundario(
+        titulo: 'Novo Serviço',
+        icone: Icons.content_cut_rounded,
+      ),
       body: Column(
         children: [
           Expanded(

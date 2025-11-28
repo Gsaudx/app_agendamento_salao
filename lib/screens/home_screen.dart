@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:app_paula_barros/screens/newappointmens_screen.dart';
@@ -7,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../components/app_bar_padrao.dart';
+import '../components/dialog_confirmacao.dart';
 import '../components/floating_menu.dart';
 import '../dependencias/dependencias_widget.dart';
 import '../modelos/agendamento.dart';
@@ -24,12 +24,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late final AgendamentosServico _agendamentosServico;
   final String _termoBusca = '';
-  CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateUtils.dateOnly(DateTime.now());
-  String _visaoSelecionada = _VisaoCalendario.mes;
   bool _diaExpandido = false;
   final ScrollController _scrollController = ScrollController();
+  Map<DateTime, List<Agendamento>> _eventosPorDia = {};
 
   @override
   void didChangeDependencies() {
@@ -41,15 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  double _alturaCalendario(BuildContext context) {
-    final alturaTela = MediaQuery.of(context).size.height;
-    final maximoPermitido = math.max(alturaTela * 0.65, 400.0);
-    final desejado = _calendarFormat == CalendarFormat.month ? 480.0 : 280.0;
-    final minimo = _calendarFormat == CalendarFormat.month ? 400.0 : 220.0;
-    final ajustado = desejado.clamp(minimo, maximoPermitido);
-    return ajustado.toDouble();
   }
 
   @override
@@ -85,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
             final agendamentos = snapshot.data ?? const <Agendamento>[];
             final eventosPorDia = _organizarPorDia(agendamentos);
+            _eventosPorDia = eventosPorDia;
             final selecionados =
                 eventosPorDia[_selectedDay] ?? const <Agendamento>[];
             final filtrados = _aplicarFiltro(selecionados);
@@ -120,130 +111,111 @@ class _HomeScreenState extends State<HomeScreen> {
     Map<DateTime, List<Agendamento>> eventosPorDia,
     List<Agendamento> filtrados,
   ) {
-    final alturaCalendario = _alturaCalendario(context);
-    const alturaCabecalhoEstimado = 68.0;
-    const alturaDiasSemana = 24.0;
-    final linhasCalendario = _calendarFormat == CalendarFormat.month ? 6 : 1;
-    final alturaDisponivelCorpo =
-        alturaCalendario - alturaCabecalhoEstimado - alturaDiasSemana;
-    final rowHeight = (alturaDisponivelCorpo / linhasCalendario).clamp(
-      52.0,
-      85.0,
-    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calcula a altura das linhas para preencher o espaço disponível
+        // Considerando: cabeçalho (50) + dias da semana (24) + 6 linhas de dias
+        const alturaCabecalho = 50.0;
+        const alturaDiasSemana = 24.0;
+        const linhasCalendario = 6;
+        const margemSeguranca = 10.0; // Margem para evitar overflow
+        final alturaDisponivel = constraints.maxHeight - alturaCabecalho - alturaDiasSemana - margemSeguranca;
+        final rowHeight = (alturaDisponivel / linhasCalendario).clamp(45.0, 85.0);
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      slivers: [
-        SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _SegmentedPeriodSelector(
-                visaoSelecionada: _visaoSelecionada,
-                onChange: _alterarVisao,
-              ),
-              const SizedBox(height: 16),
-            ],
+        return TableCalendar<Agendamento>(
+          locale: 'pt_BR',
+          firstDay: DateTime.utc(2020, 1, 1),
+          lastDay: DateTime.utc(2035, 12, 31),
+          focusedDay: _focusedDay,
+          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+          calendarFormat: CalendarFormat.month,
+          availableGestures: AvailableGestures.horizontalSwipe,
+          eventLoader: (day) =>
+              eventosPorDia[DateUtils.dateOnly(day)] ?? const [],
+          onDaySelected: (selected, focused) {
+            setState(() {
+              _selectedDay = DateUtils.dateOnly(selected);
+              _focusedDay = focused;
+              _diaExpandido = true;
+            });
+            _scrollParaHoraAtual();
+          },
+          calendarBuilders: CalendarBuilders(
+            markerBuilder: (context, day, events) {
+              if (events.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return _IndicadoresAgendamento(
+                eventos: events.cast<Agendamento>(),
+              );
+            },
+            defaultBuilder: (context, day, focusedDay) {
+              final isWeekend = day.weekday == DateTime.saturday ||
+                  day.weekday == DateTime.sunday;
+              return _DiaCalendario(
+                dia: day.day,
+                corTexto:
+                    isWeekend ? const Color(0xFFCF7072) : Colors.black87,
+              );
+            },
+            todayBuilder: (context, day, focusedDay) {
+              final estaSelecionado = isSameDay(_selectedDay, day);
+              if (estaSelecionado) {
+                return _DiaCalendario(
+                  dia: day.day,
+                  corFundo: const Color(0xFFCF7072),
+                  corTexto: Colors.white,
+                  negrito: true,
+                );
+              }
+              return _DiaCalendario(
+                dia: day.day,
+                corTexto: const Color(0xFFCF7072),
+                negrito: true,
+              );
+            },
+            selectedBuilder: (context, day, focusedDay) {
+              return _DiaCalendario(
+                dia: day.day,
+                corFundo: const Color(0xFFCF7072),
+                corTexto: Colors.white,
+                negrito: true,
+              );
+            },
           ),
-        ),
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: alturaCalendario,
-            child: TableCalendar<Agendamento>(
-              locale: 'pt_BR',
-              firstDay: DateTime.utc(2020, 1, 1),
-              lastDay: DateTime.utc(2035, 12, 31),
-              focusedDay: _focusedDay,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-              calendarFormat: _calendarFormat,
-              availableGestures: AvailableGestures.horizontalSwipe,
-              eventLoader: (day) =>
-                  eventosPorDia[DateUtils.dateOnly(day)] ?? const [],
-              onDaySelected: (selected, focused) {
-                setState(() {
-                  _selectedDay = DateUtils.dateOnly(selected);
-                  _focusedDay = focused;
-                  _diaExpandido = true;
-                });
-                _scrollParaHoraAtual();
-              },
-              onFormatChanged: (format) {
-                setState(() => _calendarFormat = format);
-              },
-              calendarBuilders: CalendarBuilders(
-                markerBuilder: (context, day, events) {
-                  if (events.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  return _IndicadoresAgendamento(
-                    eventos: events.cast<Agendamento>(),
-                  );
-                },
-                defaultBuilder: (context, day, focusedDay) {
-                  final isWeekend = day.weekday == DateTime.saturday ||
-                      day.weekday == DateTime.sunday;
-                  return _DiaCalendario(
-                    dia: day.day,
-                    corTexto:
-                        isWeekend ? const Color(0xFFCF7072) : Colors.black87,
-                  );
-                },
-                todayBuilder: (context, day, focusedDay) {
-                  final estaSelecionado = isSameDay(_selectedDay, day);
-                  if (estaSelecionado) {
-                    return _DiaCalendario(
-                      dia: day.day,
-                      corFundo: const Color(0xFFCF7072),
-                      corTexto: Colors.white,
-                      negrito: true,
-                    );
-                  }
-                  return _DiaCalendario(
-                    dia: day.day,
-                    corTexto: const Color(0xFFCF7072),
-                    negrito: true,
-                  );
-                },
-                selectedBuilder: (context, day, focusedDay) {
-                  return _DiaCalendario(
-                    dia: day.day,
-                    corFundo: const Color(0xFFCF7072),
-                    corTexto: Colors.white,
-                    negrito: true,
-                  );
-                },
-              ),
-              headerStyle: HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
-                headerPadding: const EdgeInsets.only(bottom: 8),
-                titleTextFormatter: (date, locale) =>
-                    DateFormat.yMMMM('pt_BR').format(date),
-                leftChevronIcon: const Icon(Icons.chevron_left),
-                rightChevronIcon: const Icon(Icons.chevron_right),
-              ),
-              daysOfWeekStyle: DaysOfWeekStyle(
-                weekendStyle: (tema.textTheme.bodySmall ?? const TextStyle())
-                    .copyWith(color: const Color(0xFFCF7072)),
-              ),
-              daysOfWeekHeight: alturaDiasSemana,
-              rowHeight: rowHeight.toDouble(),
-              calendarStyle: const CalendarStyle(
-                outsideDaysVisible: false,
-                tablePadding: EdgeInsets.symmetric(vertical: 4),
-                cellMargin: EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 2,
-                ),
-              ),
+          headerStyle: HeaderStyle(
+            formatButtonVisible: false,
+            titleCentered: true,
+            headerPadding: const EdgeInsets.only(bottom: 8),
+            titleTextFormatter: (date, locale) =>
+                DateFormat.yMMMM('pt_BR').format(date),
+            titleTextStyle: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+            leftChevronIcon: const Icon(Icons.chevron_left, size: 28),
+            rightChevronIcon: const Icon(Icons.chevron_right, size: 28),
+          ),
+          daysOfWeekStyle: const DaysOfWeekStyle(
+            weekdayStyle: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+            weekendStyle: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFFCF7072),
             ),
           ),
-        ),
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 88),
-        ),
-      ],
+          daysOfWeekHeight: 24,
+          rowHeight: rowHeight,
+          calendarStyle: const CalendarStyle(
+            outsideDaysVisible: false,
+            tablePadding: EdgeInsets.zero,
+            cellMargin: EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+          ),
+        );
+      },
     );
   }
 
@@ -378,25 +350,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  void _alterarVisao(String visao) {
-    setState(() {
-      _visaoSelecionada = visao;
-      switch (visao) {
-        case _VisaoCalendario.semana:
-          _calendarFormat = CalendarFormat.week;
-          break;
-        default:
-          _calendarFormat = CalendarFormat.month;
-      }
-    });
-  }
-
   void _abrirNovoAgendamento() {
     final dia = _selectedDay;
-    final agora = TimeOfDay.now();
-    final horaInicial = DateUtils.isSameDay(dia, DateTime.now())
-        ? _alinharParaGrade(agora)
-        : const TimeOfDay(hour: 9, minute: 0);
+    final agendamentosDoDia = _eventosPorDia[dia] ?? <Agendamento>[];
+    
+    TimeOfDay horaInicial;
+    
+    if (agendamentosDoDia.isNotEmpty) {
+      // Ordena por horário e pega o último
+      final ordenados = List<Agendamento>.from(agendamentosDoDia)
+        ..sort((a, b) => a.inicio.compareTo(b.inicio));
+      final ultimo = ordenados.last;
+      final fimUltimo = ultimo.fim ?? 
+          ultimo.inicio.add(Duration(minutes: ultimo.duracaoMinutos));
+      horaInicial = TimeOfDay(hour: fimUltimo.hour, minute: fimUltimo.minute);
+      // Alinha para a grade de 15 minutos
+      horaInicial = _alinharParaGrade(horaInicial);
+    } else if (DateUtils.isSameDay(dia, DateTime.now())) {
+      // Dia atual sem agendamentos - usa hora atual
+      horaInicial = _alinharParaGrade(TimeOfDay.now());
+    } else {
+      // Outro dia sem agendamentos - começa às 9h
+      horaInicial = const TimeOfDay(hour: 9, minute: 0);
+    }
+    
     Navigator.pushNamed(
       context,
       NewAppointmentScreen.routeName,
@@ -426,30 +403,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _cancelarAgendamento(Agendamento agendamento) async {
     final formatadorData = DateFormat.yMMMMd('pt_BR');
     final formatadorHora = DateFormat.Hm('pt_BR');
-    final confirmado =
-        await showDialog<bool>(
-          context: context,
-          builder: (contextoDialogo) => AlertDialog(
-            title: const Text('Cancelar agendamento'),
-            content: Text(
-              'Deseja cancelar o agendamento de ${agendamento.clienteNome} em '
-              '${formatadorData.format(agendamento.inicio)} às '
-              '${formatadorHora.format(agendamento.inicio)}? Essa ação não '
-              'pode ser desfeita.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(contextoDialogo).pop(false),
-                child: const Text('Manter'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(contextoDialogo).pop(true),
-                child: const Text('Cancelar agendamento'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+    final confirmado = await DialogConfirmacao.mostrar(
+      context: context,
+      titulo: 'Cancelar agendamento',
+      mensagem: 'Deseja cancelar o agendamento de ${agendamento.clienteNome} em '
+          '${formatadorData.format(agendamento.inicio)} às '
+          '${formatadorHora.format(agendamento.inicio)}?\n\nEssa ação não pode ser desfeita.',
+      tipo: TipoDialogo.exclusao,
+      textoBotaoConfirmar: 'Cancelar',
+      textoBotaoCancelar: 'Manter',
+    );
 
     if (!confirmado || !mounted) {
       return;
@@ -609,115 +572,95 @@ class _IndicadoresAgendamento extends StatelessWidget {
   Widget build(BuildContext context) {
     if (eventos.isEmpty) return const SizedBox.shrink();
 
-    final maxBarras = 2;
-    final eventosVisiveis = eventos.take(maxBarras).toList();
-    final restantes = eventos.length - maxBarras;
+    // Ordena por horário
+    final eventosOrdenados = List<Agendamento>.from(eventos)
+      ..sort((a, b) => a.inicio.compareTo(b.inicio));
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final alturaDisponivel = constraints.maxHeight - 28;
+        final alturaTotal = constraints.maxHeight;
+        const alturaNumeroDia = 28.0;
+        final alturaDisponivel = alturaTotal - alturaNumeroDia - 2;
+        
         if (alturaDisponivel <= 0) return const SizedBox.shrink();
         
+        // Calcula quantos retângulos cabem (cada um = 12px + 2px margin)
+        const alturaRetangulo = 12.0;
+        const margemRetangulo = 2.0;
+        const alturaIndicadorExtra = 10.0;
+        
+        final espacoParaRetangulos = alturaDisponivel - alturaIndicadorExtra;
+        final maxRetangulosPossiveis = (espacoParaRetangulos / (alturaRetangulo + margemRetangulo)).floor();
+        final maxRetangulos = maxRetangulosPossiveis.clamp(1, 3);
+        
+        final eventosVisiveis = eventosOrdenados.take(maxRetangulos).toList();
+        final restantes = eventosOrdenados.length - maxRetangulos;
+
         return Padding(
-          padding: const EdgeInsets.only(top: 26, left: 2, right: 2),
-          child: SizedBox(
-            height: alturaDisponivel,
-            child: OverflowBox(
-              maxHeight: alturaDisponivel,
-              alignment: Alignment.topCenter,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ...eventosVisiveis.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final evento = entry.value;
-                    final cor = _cores[index % _cores.length];
-                    return Container(
-                      width: double.infinity,
-                      height: 10,
-                      margin: const EdgeInsets.only(bottom: 1),
-                      decoration: BoxDecoration(
+          padding: EdgeInsets.only(top: alturaNumeroDia, left: 2, right: 2, bottom: 2),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ...eventosVisiveis.asMap().entries.map((entry) {
+                final index = entry.key;
+                final evento = entry.value;
+                final cor = _cores[index % _cores.length];
+                return Container(
+                  height: alturaRetangulo,
+                  margin: const EdgeInsets.only(bottom: margemRetangulo),
+                  decoration: BoxDecoration(
+                    color: cor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [cor, cor, cor.withOpacity(0)],
+                        stops: const [0.0, 0.7, 1.0],
+                      ).createShader(bounds),
+                      blendMode: BlendMode.dstIn,
+                      child: Container(
                         color: cor,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [Colors.white, Colors.transparent],
-                            stops: [0.5, 1.0],
-                          ).createShader(bounds),
-                          blendMode: BlendMode.dstIn,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 2),
-                            child: Text(
-                              evento.clienteNome,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 7,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              overflow: TextOverflow.clip,
-                              maxLines: 1,
-                            ),
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          evento.clienteNome,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w500,
+                            height: 1.0,
                           ),
+                          overflow: TextOverflow.clip,
+                          maxLines: 1,
+                          softWrap: false,
                         ),
                       ),
-                    );
-                  }),
-                  if (restantes > 0 && alturaDisponivel > 22)
-                    Text(
-                      '+$restantes',
-                      style: TextStyle(
-                        fontSize: 7,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade600,
-                      ),
                     ),
-                ],
-              ),
-            ),
+                  ),
+                );
+              }),
+              if (restantes > 0)
+                Text(
+                  '+$restantes',
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                    height: 1.0,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+            ],
           ),
         );
       },
     );
   }
-}
-
-class _SegmentedPeriodSelector extends StatelessWidget {
-  const _SegmentedPeriodSelector({
-    required this.visaoSelecionada,
-    required this.onChange,
-  });
-
-  final String visaoSelecionada;
-  final ValueChanged<String> onChange;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: SegmentedButton<String>(
-        segments: const [
-          ButtonSegment(value: _VisaoCalendario.semana, label: Text('Semana')),
-          ButtonSegment(value: _VisaoCalendario.mes, label: Text('Mês')),
-        ],
-        selected: <String>{visaoSelecionada},
-        onSelectionChanged: (selecionados) {
-          if (selecionados.isNotEmpty) {
-            onChange(selecionados.first);
-          }
-        },
-      ),
-    );
-  }
-}
-
-class _VisaoCalendario {
-  static const semana = 'semana';
-  static const mes = 'mes';
 }
 
 class _DiaCalendario extends StatelessWidget {
@@ -735,26 +678,34 @@ class _DiaCalendario extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Container(
-          width: 24,
-          height: 24,
-          decoration: corFundo != null
-              ? BoxDecoration(
-                  color: corFundo,
-                  shape: BoxShape.circle,
-                )
-              : null,
-          alignment: Alignment.center,
-          child: Text(
-            '$dia',
-            style: TextStyle(
-              color: corTexto,
-              fontSize: 12,
-              fontWeight: negrito ? FontWeight.bold : FontWeight.normal,
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 0.5,
+        ),
+      ),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Container(
+            width: 26,
+            height: 26,
+            decoration: corFundo != null
+                ? BoxDecoration(
+                    color: corFundo,
+                    shape: BoxShape.circle,
+                  )
+                : null,
+            alignment: Alignment.center,
+            child: Text(
+              '$dia',
+              style: TextStyle(
+                color: corTexto,
+                fontSize: 14,
+                fontWeight: negrito ? FontWeight.bold : FontWeight.normal,
+              ),
             ),
           ),
         ),
@@ -776,47 +727,33 @@ class _DiaCalendarioCompacto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final diasSemana = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-    final diaSemana = diasSemana[dia.weekday % 7];
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          diaSemana,
+    return Center(
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: selecionado
+              ? const Color(0xFFCF7072)
+              : hoje
+                  ? const Color(0xFFFEC8C8)
+                  : null,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '${dia.day}',
           style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
             color: selecionado
-                ? const Color(0xFFCF7072)
+                ? Colors.white
                 : hoje
-                    ? const Color(0xFFFEC8C8)
-                    : null,
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '${dia.day}',
-            style: TextStyle(
-              color: selecionado
-                  ? Colors.white
-                  : hoje
-                      ? const Color(0xFFCF7072)
-                      : Colors.black87,
-              fontWeight:
-                  selecionado || hoje ? FontWeight.bold : FontWeight.normal,
-              fontSize: 14,
-            ),
+                    ? const Color(0xFFCF7072)
+                    : Colors.black87,
+            fontWeight:
+                selecionado || hoje ? FontWeight.bold : FontWeight.normal,
+            fontSize: 15,
           ),
         ),
-      ],
+      ),
     );
   }
 }

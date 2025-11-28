@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../dependencias/dependencias_widget.dart';
-import '../screens/login_screen.dart';
 
 class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
   const AppBarPadrao({
@@ -14,16 +13,13 @@ class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
   final bool mostrarLogout;
 
   Future<void> _sair(BuildContext context) async {
-    final navigator = Navigator.of(context);
-    final mensageiro = ScaffoldMessenger.of(context);
     try {
       final autenticacao = DependenciasWidget.autenticacaoDe(context);
+      debugPrint('Iniciando logout...');
       await autenticacao.sair();
-      navigator.pushNamedAndRemoveUntil(LoginScreen.routeName, (_) => false);
-    } catch (erro) {
-      mensageiro.showSnackBar(
-        SnackBar(content: Text('Não foi possível sair: $erro')),
-      );
+      debugPrint('Logout concluído com sucesso');
+    } catch (e) {
+      debugPrint('Erro no logout: $e');
     }
   }
 

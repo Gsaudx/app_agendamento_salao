@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../components/app_bar_secundario.dart';
 import '../components/button.dart';
 import '../components/foto_cliente_selector.dart';
 import '../components/Input.dart';
@@ -39,7 +40,10 @@ class _NewClientScreenState extends State<NewClientScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Novo Cliente')),
+      appBar: const AppBarSecundario(
+        titulo: 'Novo Cliente',
+        icone: Icons.person_add_rounded,
+      ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

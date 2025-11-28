@@ -11,17 +11,17 @@ class DependenciasWidget extends InheritedWidget {
     super.key,
     required super.child,
     required this.autenticacao,
-    required this.clientes,
-    required this.servicos,
-    required this.agendamentos,
-    required this.storage,
+    this.clientes,
+    this.servicos,
+    this.agendamentos,
+    this.storage,
   });
 
   final AutenticacaoServico autenticacao;
-  final ClientesServico clientes;
-  final ServicosServico servicos;
-  final AgendamentosServico agendamentos;
-  final StorageServico storage;
+  final ClientesServico? clientes;
+  final ServicosServico? servicos;
+  final AgendamentosServico? agendamentos;
+  final StorageServico? storage;
 
   static AutenticacaoServico autenticacaoDe(BuildContext context) {
     final dependencias = context
@@ -40,7 +40,11 @@ class DependenciasWidget extends InheritedWidget {
       dependencias != null,
       'DependenciasWidget não encontrado no contexto.',
     );
-    return dependencias!.clientes;
+    assert(
+      dependencias!.clientes != null,
+      'ClientesServico não disponível. Usuário não está logado.',
+    );
+    return dependencias!.clientes!;
   }
 
   static ServicosServico servicosDe(BuildContext context) {
@@ -50,7 +54,11 @@ class DependenciasWidget extends InheritedWidget {
       dependencias != null,
       'DependenciasWidget não encontrado no contexto.',
     );
-    return dependencias!.servicos;
+    assert(
+      dependencias!.servicos != null,
+      'ServicosServico não disponível. Usuário não está logado.',
+    );
+    return dependencias!.servicos!;
   }
 
   static AgendamentosServico agendamentosDe(BuildContext context) {
@@ -60,7 +68,11 @@ class DependenciasWidget extends InheritedWidget {
       dependencias != null,
       'DependenciasWidget não encontrado no contexto.',
     );
-    return dependencias!.agendamentos;
+    assert(
+      dependencias!.agendamentos != null,
+      'AgendamentosServico não disponível. Usuário não está logado.',
+    );
+    return dependencias!.agendamentos!;
   }
 
   static StorageServico storageDe(BuildContext context) {
@@ -70,9 +82,18 @@ class DependenciasWidget extends InheritedWidget {
       dependencias != null,
       'DependenciasWidget não encontrado no contexto.',
     );
-    return dependencias!.storage;
+    assert(
+      dependencias!.storage != null,
+      'StorageServico não disponível. Usuário não está logado.',
+    );
+    return dependencias!.storage!;
   }
 
   @override
-  bool updateShouldNotify(covariant DependenciasWidget oldWidget) => false;
+  bool updateShouldNotify(covariant DependenciasWidget oldWidget) {
+    return clientes != oldWidget.clientes ||
+        servicos != oldWidget.servicos ||
+        agendamentos != oldWidget.agendamentos ||
+        storage != oldWidget.storage;
+  }
 }

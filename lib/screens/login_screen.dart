@@ -1,9 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-// Preservando as importações do usuário (assumindo que dependencias_widget.dart e home_screen.dart existem)
+// Preservando as importações do usuário (assumindo que dependencias_widget.dart existe)
 import 'package:app_paula_barros/dependencias/dependencias_widget.dart';
-import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -56,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Card(
-                    color: const Color.fromARGB(255, 252, 218, 218),
+                    color: Colors.white,
                     elevation: 50,
                     child: Padding(
                       padding: const EdgeInsets.all(24),
@@ -172,23 +171,46 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            // Botão Entrar com Google
+                            // Botão Continuar com Google
                             SizedBox(
                               width: double.infinity,
-                              child: OutlinedButton.icon(
+                              child: OutlinedButton(
                                 onPressed: _carregandoGoogle
                                     ? null
                                     : _autenticarGoogle,
-                                icon: _carregandoGoogle
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  side: BorderSide(color: Colors.grey[300]!),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: _carregandoGoogle
                                     ? const SizedBox(
-                                        height: 16,
-                                        width: 16,
+                                        height: 20,
+                                        width: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
                                         ),
                                       )
-                                    : const Icon(Icons.login),
-                                label: const Text('Entrar com Google'),
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Image.asset(
+                                            'assets/img/google_logo.png',
+                                            height: 20,
+                                            width: 20,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Text(
+                                            'Continuar com Google',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -253,15 +275,8 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         await autenticacao.entrarEmailSenha(email: email, senha: senha);
       }
-      if (!mounted) {
-        return;
-      }
-      // Navega para a HomeScreen
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        HomeScreen.routeName,
-        (_) => false,
-      );
+      // Não precisa navegar - o StreamBuilder no app.dart
+      // irá automaticamente mostrar a HomeScreen
     } on FirebaseAuthException catch (erro) {
       _exibirMensagemErro(erro.message ?? 'Falha na autenticação.');
     } catch (erro) {
@@ -283,15 +298,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final autenticacao = DependenciasWidget.autenticacaoDe(context);
     try {
       await autenticacao.entrarGoogle();
-      if (!mounted) {
-        return;
-      }
-      // Navega para a HomeScreen
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        HomeScreen.routeName,
-        (_) => false,
-      );
+      // Não precisa navegar - o StreamBuilder no app.dart
+      // irá automaticamente mostrar a HomeScreen
     } on FirebaseAuthException catch (erro) {
       _exibirMensagemErro(erro.message ?? 'Falha ao entrar com Google.');
     } on StateError catch (erro) {
