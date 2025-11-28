@@ -3,16 +3,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../modelos/cliente.dart';
 
 class ClientesServico {
-  ClientesServico({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  ClientesServico({
+    required String userId,
+    FirebaseFirestore? firestore,
+  })  : _userId = userId,
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
+  final String _userId;
   final FirebaseFirestore _firestore;
 
   CollectionReference<Map<String, dynamic>> get _colecao =>
-      _firestore.collection('clients');
+      _firestore.collection('users').doc(_userId).collection('clients');
 
   CollectionReference<Map<String, dynamic>> get _colecaoAgendamentos =>
-      _firestore.collection('appointments');
+      _firestore.collection('users').doc(_userId).collection('appointments');
 
   Stream<List<Cliente>> observarClientes() {
     return _colecao

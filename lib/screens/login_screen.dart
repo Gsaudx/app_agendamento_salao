@@ -1,9 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-// Preservando as importações do usuário (assumindo que dependencias_widget.dart e home_screen.dart existem)
+// Preservando as importações do usuário (assumindo que dependencias_widget.dart existe)
 import 'package:app_paula_barros/dependencias/dependencias_widget.dart';
-import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -276,15 +275,8 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         await autenticacao.entrarEmailSenha(email: email, senha: senha);
       }
-      if (!mounted) {
-        return;
-      }
-      // Navega para a HomeScreen
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        HomeScreen.routeName,
-        (_) => false,
-      );
+      // Não precisa navegar - o StreamBuilder no app.dart
+      // irá automaticamente mostrar a HomeScreen
     } on FirebaseAuthException catch (erro) {
       _exibirMensagemErro(erro.message ?? 'Falha na autenticação.');
     } catch (erro) {
@@ -306,15 +298,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final autenticacao = DependenciasWidget.autenticacaoDe(context);
     try {
       await autenticacao.entrarGoogle();
-      if (!mounted) {
-        return;
-      }
-      // Navega para a HomeScreen
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        HomeScreen.routeName,
-        (_) => false,
-      );
+      // Não precisa navegar - o StreamBuilder no app.dart
+      // irá automaticamente mostrar a HomeScreen
     } on FirebaseAuthException catch (erro) {
       _exibirMensagemErro(erro.message ?? 'Falha ao entrar com Google.');
     } on StateError catch (erro) {

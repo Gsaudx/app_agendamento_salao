@@ -3,13 +3,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../modelos/agendamento.dart';
 
 class AgendamentosServico {
-  AgendamentosServico({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  AgendamentosServico({
+    required String userId,
+    FirebaseFirestore? firestore,
+  })  : _userId = userId,
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
+  final String _userId;
   final FirebaseFirestore _firestore;
 
   CollectionReference<Map<String, dynamic>> get _colecao =>
-      _firestore.collection('appointments');
+      _firestore.collection('users').doc(_userId).collection('appointments');
 
   Stream<List<Agendamento>> observarAgenda({bool apenasFuturos = true}) {
     Query<Map<String, dynamic>> consulta = _colecao.orderBy(

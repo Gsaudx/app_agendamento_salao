@@ -3,16 +3,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../modelos/servico.dart';
 
 class ServicosServico {
-  ServicosServico({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  ServicosServico({
+    required String userId,
+    FirebaseFirestore? firestore,
+  })  : _userId = userId,
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
+  final String _userId;
   final FirebaseFirestore _firestore;
 
   CollectionReference<Map<String, dynamic>> get _colecao =>
-      _firestore.collection('services');
+      _firestore.collection('users').doc(_userId).collection('services');
 
   CollectionReference<Map<String, dynamic>> get _colecaoAgendamentos =>
-      _firestore.collection('appointments');
+      _firestore.collection('users').doc(_userId).collection('appointments');
 
   Stream<List<Servico>> observarServicos() {
     return _colecao

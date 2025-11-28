@@ -1,5 +1,6 @@
 import 'package:app_paula_barros/screens/history_screen.dart';
 import 'package:app_paula_barros/screens/newappointmens_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -19,68 +20,111 @@ import 'servicos/clientes_servico.dart';
 import 'servicos/servicos_servico.dart';
 import 'servicos/storage_servico.dart';
 
-class SalonSchedulerApp extends StatelessWidget {
+class SalonSchedulerApp extends StatefulWidget {
   const SalonSchedulerApp({
     super.key,
     AutenticacaoServico? autenticacaoServico,
-    ClientesServico? clientesServico,
-    ServicosServico? servicosServico,
-    AgendamentosServico? agendamentosServico,
-    StorageServico? storageServico,
-  }) : _autenticacaoServico = autenticacaoServico,
-       _clientesServico = clientesServico,
-       _servicosServico = servicosServico,
-       _agendamentosServico = agendamentosServico,
-       _storageServico = storageServico;
+  }) : _autenticacaoServico = autenticacaoServico;
 
   final AutenticacaoServico? _autenticacaoServico;
-  final ClientesServico? _clientesServico;
-  final ServicosServico? _servicosServico;
-  final AgendamentosServico? _agendamentosServico;
-  final StorageServico? _storageServico;
+
+  @override
+  State<SalonSchedulerApp> createState() => _SalonSchedulerAppState();
+}
+
+class _SalonSchedulerAppState extends State<SalonSchedulerApp> {
+  late final AutenticacaoServico _autenticacao;
+
+  @override
+  void initState() {
+    super.initState();
+    _autenticacao = widget._autenticacaoServico ?? AutenticacaoServico();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final autenticacao = _autenticacaoServico ?? AutenticacaoServico();
-    final clientesServico = _clientesServico ?? ClientesServico();
-    final servicosServico = _servicosServico ?? ServicosServico();
-    final agendamentosServico = _agendamentosServico ?? AgendamentosServico();
-    final storageServico = _storageServico ?? StorageServico();
-    final rotaInicial = autenticacao.usuarioAtual != null
-        ? HomeScreen.routeName
-        : LoginScreen.routeName;
+    return StreamBuilder<User?>(
+      stream: _autenticacao.fluxoUsuario,
+      builder: (context, snapshot) {
+        final usuario = snapshot.data;
+        final userId = usuario?.uid;
 
+        // Se não há usuário logado, mostra apenas a tela de login
+        if (userId == null) {
+          return _buildApp(
+            autenticacao: _autenticacao,
+            clientes: null,
+            servicos: null,
+            agendamentos: null,
+            storage: null,
+            rotaInicial: LoginScreen.routeName,
+            userId: null,
+          );
+        }
+
+        // Usuário logado - cria serviços com o userId
+        final clientesServico = ClientesServico(userId: userId);
+        final servicosServico = ServicosServico(userId: userId);
+        final agendamentosServico = AgendamentosServico(userId: userId);
+        final storageServico = StorageServico(userId: userId);
+
+        return _buildApp(
+          autenticacao: _autenticacao,
+          clientes: clientesServico,
+          servicos: servicosServico,
+          agendamentos: agendamentosServico,
+          storage: storageServico,
+          rotaInicial: HomeScreen.routeName,
+          userId: userId,
+        );
+      },
+    );
+  }
+
+  Widget _buildApp({
+    required AutenticacaoServico autenticacao,
+    required ClientesServico? clientes,
+    required ServicosServico? servicos,
+    required AgendamentosServico? agendamentos,
+    required StorageServico? storage,
+    required String rotaInicial,
+    String? userId,
+  }) {
     return DependenciasWidget(
+      key: ValueKey('deps_$userId'),
       autenticacao: autenticacao,
-      clientes: clientesServico,
-      servicos: servicosServico,
-      agendamentos: agendamentosServico,
-      storage: storageServico,
+      clientes: clientes,
+      servicos: servicos,
+      agendamentos: agendamentos,
+      storage: storage,
       child: MaterialApp(
+        key: ValueKey('app_$userId'),
         title: 'Salão Paula Barros',
         theme: _buildTheme(),
-        initialRoute: rotaInicial,
-        routes: {
-          LoginScreen.routeName: (context) => const LoginScreen(),
-          HomeScreen.routeName: (context) => const HomeScreen(),
-          AppointmentsScreen.routeName: (context) => const AppointmentsScreen(),
-          ClientsScreen.routeName: (context) => const ClientsScreen(),
-          ServicesScreen.routeName: (context) => const ServicesScreen(),
-          NewClientScreen.routeName: (context) => const NewClientScreen(),
-          EditClientScreen.routeName: (context) => const EditClientScreen(),
-          NewServiceScreen.routeName: (context) => const NewServiceScreen(),
-          EditServiceScreen.routeName: (context) => const EditServiceScreen(),
-          NewAppointmentScreen.routeName: (context) => const NewAppointmentScreen(),
-          HistoryScreen.routeName: (context) => const HistoryScreen(),
+        home: userId == null ? const LoginScreen() : const HomeScreen(),
+        onGenerateRoute: (settings) {
+          final routes = <String, WidgetBuilder>{
+            LoginScreen.routeName: (context) => const LoginScreen(),
+            AppointmentsScreen.routeName: (context) => const AppointmentsScreen(),
+            ClientsScreen.routeName: (context) => const ClientsScreen(),
+            ServicesScreen.routeName: (context) => const ServicesScreen(),
+            NewClientScreen.routeName: (context) => const NewClientScreen(),
+            EditClientScreen.routeName: (context) => const EditClientScreen(),
+            NewServiceScreen.routeName: (context) => const NewServiceScreen(),
+            EditServiceScreen.routeName: (context) => const EditServiceScreen(),
+            NewAppointmentScreen.routeName: (context) => const NewAppointmentScreen(),
+            HistoryScreen.routeName: (context) => const HistoryScreen(),
+          };
+          final builder = routes[settings.name];
+          if (builder != null) {
+            return MaterialPageRoute(
+              builder: builder,
+              settings: settings,
+            );
+          }
+          return null;
         },
         debugShowCheckedModeBanner: false,
-        builder: (context, child) {
-          final overlay = Overlay.maybeOf(context);
-          if (overlay == null) {
-            return child ?? const SizedBox.shrink();
-          }
-          return SelectionArea(child: child ?? const SizedBox.shrink());
-        },
       ),
     );
   }

@@ -3,9 +3,13 @@ import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class StorageServico {
-  StorageServico({FirebaseStorage? storage})
-      : _storage = storage ?? FirebaseStorage.instance;
+  StorageServico({
+    required String userId,
+    FirebaseStorage? storage,
+  })  : _userId = userId,
+        _storage = storage ?? FirebaseStorage.instance;
 
+  final String _userId;
   final FirebaseStorage _storage;
 
   /// Faz upload de uma imagem de perfil do cliente.
@@ -15,7 +19,7 @@ class StorageServico {
     required Uint8List bytes,
     required String extensao,
   }) async {
-    final ref = _storage.ref().child('clientes/$clienteId/foto.$extensao');
+    final ref = _storage.ref().child('users/$_userId/clientes/$clienteId/foto.$extensao');
 
     final metadata = SettableMetadata(
       contentType: _getContentType(extensao),
@@ -41,7 +45,7 @@ class StorageServico {
       final extensoes = ['jpg', 'jpeg', 'png', 'webp'];
       for (final ext in extensoes) {
         try {
-          final ref = _storage.ref().child('clientes/$clienteId/foto.$ext');
+          final ref = _storage.ref().child('users/$_userId/clientes/$clienteId/foto.$ext');
           await ref.delete();
         } catch (_) {
           // Ignora se o arquivo não existir
