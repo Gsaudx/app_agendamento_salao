@@ -172,23 +172,46 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            // Botão Entrar com Google
+                            // Botão Continuar com Google
                             SizedBox(
                               width: double.infinity,
-                              child: OutlinedButton.icon(
+                              child: OutlinedButton(
                                 onPressed: _carregandoGoogle
                                     ? null
                                     : _autenticarGoogle,
-                                icon: _carregandoGoogle
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  side: BorderSide(color: Colors.grey[300]!),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: _carregandoGoogle
                                     ? const SizedBox(
-                                        height: 16,
-                                        width: 16,
+                                        height: 20,
+                                        width: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
                                         ),
                                       )
-                                    : const Icon(Icons.login),
-                                label: const Text('Entrar com Google'),
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Image.asset(
+                                            'assets/img/google_logo.png',
+                                            height: 20,
+                                            width: 20,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Text(
+                                            'Continuar com Google',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                               ),
                             ),
                             const SizedBox(height: 8),
