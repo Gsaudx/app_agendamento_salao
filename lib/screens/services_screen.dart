@@ -170,7 +170,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       context: context,
       titulo: 'Excluir serviço',
       mensagem: 'Deseja realmente excluir o serviço "${servico.nome}"?\n\nEssa ação não pode ser desfeita.',
-      tipo: TipoDialogo.confirmacao,
+      tipo: TipoDialogo.exclusao,
       textoBotaoConfirmar: 'Excluir',
     );
 

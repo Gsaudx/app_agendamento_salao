@@ -391,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
       mensagem: 'Deseja cancelar o agendamento de ${agendamento.clienteNome} em '
           '${formatadorData.format(agendamento.inicio)} às '
           '${formatadorHora.format(agendamento.inicio)}?\n\nEssa ação não pode ser desfeita.',
-      tipo: TipoDialogo.confirmacao,
+      tipo: TipoDialogo.exclusao,
       textoBotaoConfirmar: 'Cancelar',
       textoBotaoCancelar: 'Manter',
     );

@@ -473,7 +473,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
       context: context,
       titulo: 'Excluir cliente',
       mensagem: 'Deseja realmente excluir o cliente "${cliente.nome}"?\n\nEssa ação não pode ser desfeita.',
-      tipo: TipoDialogo.confirmacao,
+      tipo: TipoDialogo.exclusao,
       textoBotaoConfirmar: 'Excluir',
     );
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum TipoDialogo { confirmacao, alerta, erro, sucesso }
+enum TipoDialogo { confirmacao, alerta, erro, sucesso, exclusao }
 
 class DialogConfirmacao extends StatelessWidget {
   const DialogConfirmacao({
@@ -77,6 +77,8 @@ class DialogConfirmacao extends StatelessWidget {
         return Icons.error_outline_rounded;
       case TipoDialogo.sucesso:
         return Icons.check_circle_outline_rounded;
+      case TipoDialogo.exclusao:
+        return Icons.delete_outline_rounded;
     }
   }
 
@@ -86,7 +88,8 @@ class DialogConfirmacao extends StatelessWidget {
       case TipoDialogo.alerta:
         return const Color(0xFFCF7072);
       case TipoDialogo.erro:
-        return Colors.red;
+      case TipoDialogo.exclusao:
+        return const Color(0xFFD32F2F);
       case TipoDialogo.sucesso:
         return Colors.green;
     }
@@ -98,7 +101,8 @@ class DialogConfirmacao extends StatelessWidget {
       case TipoDialogo.alerta:
         return const Color(0xFFFEC8C8);
       case TipoDialogo.erro:
-        return Colors.red.shade50;
+      case TipoDialogo.exclusao:
+        return const Color(0xFFFFEBEE);
       case TipoDialogo.sucesso:
         return Colors.green.shade50;
     }
@@ -114,6 +118,17 @@ class DialogConfirmacao extends StatelessWidget {
         return 'Entendi';
       case TipoDialogo.sucesso:
         return 'OK';
+      case TipoDialogo.exclusao:
+        return 'Excluir';
+    }
+  }
+
+  Color get _corTitulo {
+    switch (tipo) {
+      case TipoDialogo.exclusao:
+        return const Color(0xFFD32F2F);
+      default:
+        return Colors.black87;
     }
   }
 
@@ -159,10 +174,10 @@ class DialogConfirmacao extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     titulo,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: _corTitulo,
                     ),
                     textAlign: TextAlign.center,
                   ),
