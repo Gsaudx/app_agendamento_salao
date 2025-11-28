@@ -77,7 +77,7 @@ class Select<T> extends StatelessWidget {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
+                      borderSide: const BorderSide(color: Colors.black54),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -88,15 +88,15 @@ class Select<T> extends StatelessWidget {
                       borderSide: const BorderSide(color: Colors.red),
                     ),
                     errorText: state.errorText,
-                    suffixIcon: Icon(
+                    suffixIcon: const Icon(
                       Icons.keyboard_arrow_down_rounded,
-                      color: Colors.grey[600],
+                      color: Colors.black54,
                     ),
                   ),
                   child: Text(
                     textoSelecionado ?? placeholder ?? '',
-                    style: TextStyle(
-                      color: textoSelecionado != null ? Colors.black87 : Colors.grey[500],
+                    style: const TextStyle(
+                      color: Colors.black87,
                       fontSize: 16,
                     ),
                   ),
