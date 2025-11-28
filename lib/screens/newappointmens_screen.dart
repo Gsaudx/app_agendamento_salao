@@ -357,11 +357,15 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
           ),
         )
         .toList();
+    // Usa o valor digitado pelo usuário (mesmo que seja R$0,00)
+    // Se o campo de valor estiver vazio, usa o total sugerido pelos serviços
+    final valorTexto = _valorController.text.trim();
+    final usuarioEditouValor = valorTexto.isNotEmpty;
     final totalSugerido = selecionados.fold<double>(
       0.0,
       (total, servico) => total + servico.preco,
     );
-    final total = valorDigitado > 0 ? valorDigitado : totalSugerido;
+    final total = usuarioEditouValor ? valorDigitado : totalSugerido;
     final observacoes = _observacoesController.text.trim();
     final observacoesOuNull = observacoes.isEmpty ? null : observacoes;
 
