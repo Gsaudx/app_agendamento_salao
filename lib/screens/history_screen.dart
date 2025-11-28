@@ -102,7 +102,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           });
                                         },
                                       )
-                                    : const Icon(Icons.filter_list),
+                                    : null,
                               ),
                             );
                           },
